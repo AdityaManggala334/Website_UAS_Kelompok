@@ -37,12 +37,16 @@ if (!$user || !password_verify($password, $user['password'])) {
     exit();
 }
 
-// ✅ PERBAIKAN 1: Start session
+// ============================================================
+// START SESSION
+// ============================================================
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// ✅ PERBAIKAN 2: Simpan data user ke session
+// ============================================================
+// SIMPAN DATA USER KE SESSION (fallback)
+// ============================================================
 $_SESSION['user_id'] = $user['id_users'];
 $_SESSION['nama_depan'] = $user['nama_depan'];
 $_SESSION['nama_belakang'] = $user['nama_belakang'];
@@ -50,11 +54,23 @@ $_SESSION['username'] = $user['username'];
 $_SESSION['email'] = $user['email'];
 $_SESSION['role'] = $user['role'];
 
-// ✅ PERBAIKAN 3: Simpan cookie (tetap dipertahankan)
+$header = base64_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+$payload = base64_encode(json_encode([
+    'user_id' => $user['id_users'],
+    'username' => $user['username'],
+    'nama_depan' => $user['nama_depan'],
+    'role' => $user['role'],
+    'exp' => time() + (24 * 60 * 60) // 24 jam
+]));
+$signature = base64_encode(hash_hmac('sha256', $header . '.' . $payload, 'LADUSYNC_SECRET_KEY', true));
+$jwt = $header . '.' . $payload . '.' . $signature;
+
+// Simpan JWT di cookie (httpOnly untuk keamanan)
+setcookie('auth_token', $jwt, time() + (24 * 60 * 60), '/', '', false, true);
+
 $expire = time() + (8 * 60 * 60);
 setcookie('sm_uid', (string)$user['id_users'], $expire, '/', '', false, true);
 
-// ✅ PERBAIKAN 4: Redirect ke index.php di root
-header("Location:index.php");
+header("Location: index.php");
 exit();
 ?>
