@@ -67,26 +67,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Hitung total
         $total = $durasi * $data['harga'];
         
-        // Simpan ke session untuk pembayaran
-        $_SESSION['sewa_temp'] = [
-            'id_alat' => $id_alat,
-            'nama_alat' => $data['nama_alat'],
-            'harga' => $data['harga'],
-            'durasi' => $durasi,
-            'total' => $total,
-            'metode' => $metode,
-            'stok' => $data['stok'],
-            'user_id' => $user_id,
-            'username' => $username
-        ];
+        // ============================================================
+        // SOLUSI: SIMPAN KE DATABASE (bukan session)
+        // ============================================================
         
-        // DEBUG: Log session
-        error_log("=== PINJAM.PHP: SESSION SEWA_TEMP DISIMPAN ===");
-        error_log(print_r($_SESSION['sewa_temp'], true));
+        // Generate token unik
+        $token = bin2hex(random_bytes(32));
         
-        // Redirect ke pembayaran
-        header("Location: pembayaran.php");
-        exit();
+        // Hapus data lama untuk user ini atau yang sudah expired
+        mysqli_query($conn, "DELETE FROM temp_sewa WHERE user_id = $user_id OR expires_at < NOW()");
+        
+        // Escape semua data untuk keamanan
+        $nama_alat_esc = mysqli_real_escape_string($conn, $data['nama_alat']);
+        $metode_esc = mysqli_real_escape_string($conn, $metode);
+        $username_esc = mysqli_real_escape_string($conn, $username);
+        
+        // Insert data ke tabel temp_sewa
+        $sql = "INSERT INTO temp_sewa 
+                (token, id_alat, nama_alat, harga, durasi, total, metode, stok, user_id, username, expires_at) 
+                VALUES (
+                    '$token',
+                    $id_alat,
+                    '$nama_alat_esc',
+                    " . $data['harga'] . ",
+                    $durasi,
+                    $total,
+                    '$metode_esc',
+                    " . $data['stok'] . ",
+                    $user_id,
+                    '$username_esc',
+                    DATE_ADD(NOW(), INTERVAL 1 HOUR)
+                )";
+        
+        if (mysqli_query($conn, $sql)) {
+            // Redirect ke pembayaran dengan token
+            header("Location: pembayaran.php?token=" . $token);
+            exit();
+        } else {
+            $error = "Gagal menyimpan data: " . mysqli_error($conn);
+            error_log("ERROR PINJAM.PHP: " . mysqli_error($conn));
+        }
     }
 }
 
@@ -751,6 +771,7 @@ $metode_list = [
             alert('⚠️ Silakan pilih metode pembayaran!');
             return false;
         }
+        // Jika semua valid, form akan submit
         return true;
     });
 
