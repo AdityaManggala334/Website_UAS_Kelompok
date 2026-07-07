@@ -5,25 +5,46 @@
 // ======================================================
 
 ob_start();
+session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
 require_once __DIR__ . '/koneksi.php';
 require_once __DIR__ . '/auth_helper.php';
 
-// Cek login
+// ============================================================
+// DEBUG: Cek semua data
+// ============================================================
+error_log("=== PEMBAYARAN.PHP DIAKSES ===");
+error_log("SESSION: " . print_r($_SESSION, true));
+error_log("GET: " . print_r($_GET, true));
+error_log("POST: " . print_r($_POST, true));
+
+// Cek login - gunakan fungsi dari auth_helper
 if (!isLoggedIn()) {
+    error_log("=== USER TIDAK LOGIN, REDIRECT KE LOGIN ===");
     header("Location: login.php");
     exit();
 }
+
+// Ambil user data
+$userData = getCurrentUser();
+$user_id = $userData['id'];
+$username = $userData['username'];
+$role = $userData['role'];
+
+error_log("=== USER DATA: user_id=$user_id, username=$username, role=$role ===");
 
 // Ambil data dari session
 $temp = $_SESSION['sewa_temp'] ?? null;
 
 if (!$temp) {
+    error_log("=== SESSION SEWA_TEMP TIDAK ADA! REDIRECT KE DAFTAR_ALAT ===");
     header("Location: daftar_alat.php");
     exit();
 }
+
+error_log("=== SESSION SEWA_TEMP ADA: " . print_r($temp, true));
 
 $id_alat = (int)$temp['id_alat'];
 $nama_alat = $temp['nama_alat'];
@@ -73,6 +94,8 @@ function generateInvoice($conn) {
 // ============================================================
 // PROSES KONFIRMASI
 // ============================================================
+$error = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['konfirmasi'])) {
     $status = 'menunggu_verifikasi';
     
@@ -102,94 +125,100 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['konfirmasi'])) {
     error_log("id_alat: $id_alat_val");
     error_log("user_id: $user_id_val");
     
-    mysqli_begin_transaction($conn);
-    
-    try {
-        // 1. Cek stok alat
-        $cek_stok = mysqli_query($conn, "SELECT stok FROM alat WHERE id = $id_alat_val");
-        $data_stok = mysqli_fetch_assoc($cek_stok);
+    // Cek user_id
+    if ($user_id_val <= 0) {
+        $error = "User ID tidak valid. Silakan login ulang.";
+        error_log("ERROR: User ID tidak valid: $user_id_val");
+    } else {
+        mysqli_begin_transaction($conn);
         
-        if (!$data_stok || $data_stok['stok'] <= 0) {
-            throw new Exception("Stok alat habis, tidak dapat melanjutkan peminjaman");
+        try {
+            // 1. Cek stok alat
+            $cek_stok = mysqli_query($conn, "SELECT stok FROM alat WHERE id = $id_alat_val");
+            $data_stok = mysqli_fetch_assoc($cek_stok);
+            
+            if (!$data_stok || $data_stok['stok'] <= 0) {
+                throw new Exception("Stok alat habis, tidak dapat melanjutkan peminjaman");
+            }
+            
+            // 2. Kurangi stok
+            $update_stok = mysqli_prepare($conn, "UPDATE alat SET stok = stok - 1 WHERE id = ? AND stok > 0");
+            mysqli_stmt_bind_param($update_stok, 'i', $id_alat_val);
+            mysqli_stmt_execute($update_stok);
+            $stok_updated = mysqli_stmt_affected_rows($update_stok) > 0;
+            mysqli_stmt_close($update_stok);
+            
+            if (!$stok_updated) {
+                throw new Exception("Gagal mengurangi stok. Stok mungkin sudah habis.");
+            }
+            
+            // 3. INSERT PEMINJAMAN
+            $sql = "INSERT INTO peminjaman 
+                    (id_alat, id_users, username, nama_alat, no_invoice, durasi, 
+                     tanggal_pinjam, tanggal_kembali_estimasi, total_bayar, metode_bayar, status) 
+                    VALUES (
+                        $id_alat_val, 
+                        $user_id_val, 
+                        '$username_val', 
+                        '$nama_alat_val', 
+                        '$no_invoice_val', 
+                        $durasi_val, 
+                        '$tanggal_pinjam_val', 
+                        '$tanggal_kembali_estimasi_val', 
+                        $total_bayar_val, 
+                        '$metode_val', 
+                        '$status_val'
+                    )";
+            
+            error_log("SQL: $sql");
+            
+            $insert = mysqli_query($conn, $sql);
+            
+            if (!$insert) {
+                throw new Exception("Gagal insert: " . mysqli_error($conn));
+            }
+            
+            $insert_id = mysqli_insert_id($conn);
+            error_log("Insert berhasil! ID: $insert_id");
+            
+            mysqli_commit($conn);
+            
+            // Hapus session temp
+            unset($_SESSION['sewa_temp']);
+            
+            // Redirect ke instruksi pembayaran
+            $metode_lower = strtolower($metode);
+            
+            $instruksi_map = [
+                'gopay' => 'instruksi_ewallet.php',
+                'dana' => 'instruksi_ewallet.php',
+                'ovo' => 'instruksi_ewallet.php',
+                'shopee_pay' => 'instruksi_ewallet.php',
+                'qris' => 'instruksi_ewallet.php',
+                'bca' => 'instruksi_bank.php',
+                'mandiri' => 'instruksi_bank.php',
+                'bri' => 'instruksi_bank.php',
+                'bni' => 'instruksi_bank.php'
+            ];
+            
+            $file_instruksi = $instruksi_map[$metode_lower] ?? 'instruksi_bank.php';
+            
+            $params = http_build_query([
+                'alat' => $nama_alat_val,
+                'durasi' => $durasi_val,
+                'total' => $total_bayar_val,
+                'metode' => $metode_val,
+                'id' => $insert_id
+            ]);
+            
+            header("Location: $file_instruksi?$params");
+            exit();
+            
+        } catch (Exception $e) {
+            mysqli_rollback($conn);
+            $error = "Gagal memproses: " . $e->getMessage();
+            error_log("ERROR: " . $e->getMessage());
         }
-        
-        // 2. Kurangi stok
-        $update_stok = mysqli_prepare($conn, "UPDATE alat SET stok = stok - 1 WHERE id = ? AND stok > 0");
-        mysqli_stmt_bind_param($update_stok, 'i', $id_alat_val);
-        mysqli_stmt_execute($update_stok);
-        $stok_updated = mysqli_stmt_affected_rows($update_stok) > 0;
-        mysqli_stmt_close($update_stok);
-        
-        if (!$stok_updated) {
-            throw new Exception("Gagal mengurangi stok. Stok mungkin sudah habis.");
-        }
-        
-        // 3. ✅ INSERT PEMINJAMAN - PAKAI QUERY LANGSUNG (tanpa prepared statement)
-        $sql = "INSERT INTO peminjaman 
-                (id_alat, id_users, username, nama_alat, no_invoice, durasi, 
-                 tanggal_pinjam, tanggal_kembali_estimasi, total_bayar, metode_bayar, status) 
-                VALUES (
-                    $id_alat_val, 
-                    $user_id_val, 
-                    '$username_val', 
-                    '$nama_alat_val', 
-                    '$no_invoice_val', 
-                    $durasi_val, 
-                    '$tanggal_pinjam_val', 
-                    '$tanggal_kembali_estimasi_val', 
-                    $total_bayar_val, 
-                    '$metode_val', 
-                    '$status_val'
-                )";
-        
-        error_log("SQL: $sql");
-        
-        $insert = mysqli_query($conn, $sql);
-        
-        if (!$insert) {
-            throw new Exception("Gagal insert: " . mysqli_error($conn));
-        }
-        
-        $insert_id = mysqli_insert_id($conn);
-        error_log("Insert berhasil! ID: $insert_id");
-        
-        mysqli_commit($conn);
-        
-        // Hapus session temp
-        unset($_SESSION['sewa_temp']);
-        
-        // Redirect ke instruksi pembayaran
-        $metode_lower = strtolower($metode);
-        
-        $instruksi_map = [
-            'gopay' => 'instruksi_ewallet.php',
-            'dana' => 'instruksi_ewallet.php',
-            'ovo' => 'instruksi_ewallet.php',
-            'shopee_pay' => 'instruksi_ewallet.php',
-            'qris' => 'instruksi_ewallet.php',
-            'bca' => 'instruksi_bank.php',
-            'mandiri' => 'instruksi_bank.php',
-            'bri' => 'instruksi_bank.php',
-            'bni' => 'instruksi_bank.php'
-        ];
-        
-        $file_instruksi = $instruksi_map[$metode_lower] ?? 'instruksi_bank.php';
-        
-        $params = http_build_query([
-            'alat' => $nama_alat_val,
-            'durasi' => $durasi_val,
-            'total' => $total_bayar_val,
-            'metode' => $metode_val,
-            'id' => $insert_id
-        ]);
-        
-        header("Location: $file_instruksi?$params");
-        exit();
-        
-    } catch (Exception $e) {
-        mysqli_rollback($conn);
-        $error = "Gagal memproses: " . $e->getMessage();
-        error_log("ERROR: " . $e->getMessage());
     }
 }
 
