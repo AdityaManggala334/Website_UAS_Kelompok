@@ -46,15 +46,22 @@ if ($result_list) {
 }
 
 // ======================================================
-// AMBIL DATA RIWAYAT TRANSAKSI
+// AMBIL DATA RIWAYAT TRANSAKSI - JOIN dengan users
 // ======================================================
-$data_transaksi = [];
-$query_transaksi = mysqli_query($conn, "SELECT * FROM peminjaman ORDER BY created_at DESC LIMIT 100");
+// PERBAIKAN: Ambil username dari tabel users, bukan dari peminjaman
+$query_transaksi = mysqli_query($conn, "
+    SELECT 
+        p.*, 
+        COALESCE(u.username, p.username) AS display_username
+    FROM peminjaman p
+    LEFT JOIN users u ON p.id_users = u.id_users
+    ORDER BY p.created_at DESC 
+    LIMIT 100
+");
 
 // ======================================================
 // AMBIL DATA RIWAYAT HASIL PANEN
 // ======================================================
-$data_panen = [];
 $query_panen = mysqli_query($conn, "
     SELECT hp.*, u.username 
     FROM hasil_panen hp 
@@ -465,7 +472,7 @@ $query_panen = mysqli_query($conn, "
         padding: 20px 16px 30px;
     }
 
-    /* ===== TABLE STYLES ===== */
+    /* ===== TABLE STYLES - CENTER ALIGNED ===== */
     .table-title {
         font-weight: 700;
         color: var(--ink);
@@ -481,17 +488,20 @@ $query_panen = mysqli_query($conn, "
         border-bottom: 1px solid rgba(211,168,104,0.18);
         font-family: 'JetBrains Mono', monospace;
         padding: 10px 12px;
-        text-align: left;
+        text-align: center !important;
     }
     .table-row td {
         padding: 10px 12px;
         border-bottom: 1px solid rgba(138,115,87,0.08);
         font-size: 0.82rem;
         color: #3D3529;
+        text-align: center !important;
     }
     .table-row:hover {
         background: rgba(47,82,51,0.04);
     }
+    .table-row td .text-left { text-align: left !important; }
+    .table-row td .text-right { text-align: right !important; }
 
     /* ============================================================ */
     /* FOOTER RINGKAS - SEPERTI INDEX.PHP                           */
@@ -704,14 +714,11 @@ $query_panen = mysqli_query($conn, "
         .main-area.sidebar-collapsed { margin-left: 0; width: 100%; }
         .main-area:not(.sidebar-collapsed) { margin-left: var(--sidebar-w); width: calc(100% - var(--sidebar-w)); }
         
-        /* Stats grid desktop */
         .stats-grid { 
             display: grid !important; 
             grid-template-columns: repeat(4, 1fr) !important; 
             gap: 1rem !important; 
         }
-        
-        /* Table desktop */
         .table-container table { min-width: unset; width: 100%; }
     }
 
@@ -738,7 +745,6 @@ $query_panen = mysqli_query($conn, "
             grid-template-columns: repeat(3, 1fr) !important; 
             gap: 0.75rem !important; 
         }
-        
         .table-container table { min-width: 650px; }
         .topbar { padding: 0 16px; height: 60px; }
     }
@@ -757,27 +763,6 @@ $query_panen = mysqli_query($conn, "
         
         .page-header h1 { font-size: 1.1rem; }
         .page-header p { font-size: 0.7rem; }
-        
-        .tab-wrapper { 
-            overflow-x: auto; 
-            -webkit-overflow-scrolling: touch;
-            margin: 0 -4px;
-            padding: 0 4px;
-        }
-        .tab-wrapper .flex { 
-            flex-wrap: nowrap; 
-            min-width: 360px;
-            gap: 4px;
-        }
-        .tab-wrapper .flex a {
-            font-size: 0.7rem !important;
-            padding: 8px 12px !important;
-            white-space: nowrap;
-        }
-        .tab-wrapper .flex a svg {
-            width: 12px;
-            height: 12px;
-        }
         
         .stats-grid { 
             display: grid !important; 
@@ -863,18 +848,6 @@ $query_panen = mysqli_query($conn, "
         }
         .table-title { font-size: 0.65rem !important; }
         
-        .tab-wrapper .flex { 
-            min-width: 280px;
-        }
-        .tab-wrapper .flex a { 
-            font-size: 0.55rem !important; 
-            padding: 6px 8px !important; 
-        }
-        .tab-wrapper .flex a svg {
-            width: 10px;
-            height: 10px;
-        }
-        
         .stat-card { padding: 0.3rem 0.5rem !important; }
         .stat-card .stat-value { font-size: 0.7rem !important; }
         .stat-card .stat-label { font-size: 0.45rem !important; }
@@ -907,13 +880,133 @@ $query_panen = mysqli_query($conn, "
         transition: opacity 0.15s ease 0.1s;
     }
 
-    /* Smooth tab transition */
     .tab-content {
         display: block;
         transition: opacity 0.25s ease;
     }
     .tab-content.hidden {
         display: none;
+    }
+
+    /* ===== TAB WRAPPER - SCROLLABLE DI MOBILE ===== */
+    .tab-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        margin-bottom: 1.25rem;
+    }
+    .tab-wrapper::-webkit-scrollbar {
+        display: none;
+    }
+    .tab-wrapper .flex {
+        display: flex;
+        gap: 4px;
+        padding: 4px;
+        min-width: max-content;
+        border-radius: 12px;
+        background: rgba(47,82,51,0.06);
+    }
+    .tab-link {
+        flex: 1 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        white-space: nowrap;
+        min-width: 120px;
+    }
+    .tab-link svg {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+    }
+    @media (max-width: 480px) {
+        .tab-link {
+            font-size: 0.65rem;
+            padding: 8px 12px;
+            min-width: 90px;
+            gap: 4px;
+        }
+        .tab-link svg {
+            width: 12px;
+            height: 12px;
+        }
+    }
+
+    /* ===== STATS GRID RESPONSIVE ===== */
+    .stats-grid {
+        display: grid;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+    }
+    @media (min-width: 1024px) {
+        .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+    }
+    @media (min-width: 768px) and (max-width: 1023px) {
+        .stats-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+        }
+    }
+    @media (max-width: 767px) {
+        .stats-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+    }
+    @media (max-width: 479px) {
+        .stats-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 0.3rem;
+        }
+    }
+
+    /* ===== MOBILE TAB NAV ===== */
+    .tab-nav-mobile {
+        display: none;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding: 4px 0;
+        margin-bottom: 12px;
+    }
+    .tab-nav-mobile::-webkit-scrollbar {
+        display: none;
+    }
+    .tab-nav-mobile .flex {
+        display: flex;
+        gap: 4px;
+        min-width: max-content;
+    }
+    .tab-nav-mobile .tab-link {
+        flex: 0 0 auto;
+        padding: 8px 12px;
+        font-size: 0.65rem;
+        min-width: 80px;
+    }
+    @media (max-width: 767px) {
+        .tab-nav-mobile {
+            display: block;
+        }
+        .tab-wrapper .tab-link {
+            flex: 1 0 auto;
+        }
+    }
+    @media (max-width: 480px) {
+        .tab-nav-mobile .tab-link {
+            font-size: 0.55rem;
+            padding: 6px 10px;
+            min-width: 70px;
+        }
     }
     </style>
 </head>
@@ -1020,7 +1113,6 @@ $query_panen = mysqli_query($conn, "
       <span class="nav-text">Hasil Panen</span>
     </a>
 
-    <!-- ===== EDUKASI ===== -->
     <div class="sidebar-section-label">Edukasi</div>
     <a href="konten_edukasi.php" class="nav-link">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1043,7 +1135,6 @@ $query_panen = mysqli_query($conn, "
     </a>
     <?php endif; ?>
 
-    <!-- ===== MENU CUSTOMER SERVICE DI SIDEBAR ===== -->
     <div class="sidebar-section-label">Bantuan</div>
     <a href="#" class="nav-link nav-link-cs" onclick="openCSModal(); return false;">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1056,7 +1147,6 @@ $query_panen = mysqli_query($conn, "
     </a>
   </nav>
 
-  <!-- ===== TOMBOL KELUAR ===== -->
   <div class="sidebar-bottom">
     <?php if ($is_logged_in): ?>
       <a href="logout.php" class="nav-link nav-link-logout">
@@ -1098,7 +1188,6 @@ $query_panen = mysqli_query($conn, "
       </span>
     </div>
 
-    <!-- ===== KANAN ATAS: CS + PROFIL USER ===== -->
     <div class="nav-right">
       <a href="#" class="cs-topbar-btn" onclick="openCSModal(); return false;" title="Customer Service">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1178,23 +1267,23 @@ $query_panen = mysqli_query($conn, "
 
     <!-- ===== TAB NAVIGASI ===== -->
     <div class="tab-wrapper mb-5">
-        <div class="flex gap-1 p-1 rounded-xl" style="background:rgba(47,82,51,0.06);">
+        <div class="flex">
             <a href="?tab=sensor" 
-               class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all duration-200 tab-link <?= $tab === 'sensor' ? 'tab-active' : 'tab-inactive' ?>"
+               class="tab-link <?= $tab === 'sensor' ? 'tab-active' : 'tab-inactive' ?>"
                data-tab="sensor">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 22v-4M4 12H2M22 12h-2M19.07 4.93l-2.83 2.83M6.34 17.66l-2.83 2.83M17.66 6.34l2.83-2.83M6.34 4.93l-2.83 2.83"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 22v-4M4 12H2M22 12h-2M19.07 4.93l-2.83 2.83M6.34 17.66l-2.83 2.83M17.66 6.34l2.83-2.83M6.34 4.93l-2.83 2.83"/><circle cx="12" cy="12" r="3"/></svg>
                 Riwayat Sensor
             </a>
             <a href="?tab=transaksi" 
-               class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all duration-200 tab-link <?= $tab === 'transaksi' ? 'tab-active' : 'tab-inactive' ?>"
+               class="tab-link <?= $tab === 'transaksi' ? 'tab-active' : 'tab-inactive' ?>"
                data-tab="transaksi">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
                 Riwayat Transaksi
             </a>
             <a href="?tab=panen" 
-               class="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-semibold transition-all duration-200 tab-link <?= $tab === 'panen' ? 'tab-active' : 'tab-inactive' ?>"
+               class="tab-link <?= $tab === 'panen' ? 'tab-active' : 'tab-inactive' ?>"
                data-tab="panen">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                 Riwayat Hasil Panen
             </a>
         </div>
@@ -1205,7 +1294,7 @@ $query_panen = mysqli_query($conn, "
     <!-- ============================================================ -->
     <div id="tab-sensor" class="tab-content <?= $tab === 'sensor' ? '' : 'hidden' ?>">
         
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 stats-grid" id="stat-cards">
+        <div class="stats-grid" id="stat-cards">
             <?php 
             $total_sensor_data = isset($total_sensor) ? $total_sensor : 0;
             $normal = 0; $kritis = 0; $rendah = 0; $tinggi = 0;
@@ -1252,14 +1341,14 @@ $query_panen = mysqli_query($conn, "
                 <table class="w-full border-collapse" style="min-width:650px;">
                     <thead class="table-header">
                         <tr>
-                            <th>#</th>
-                            <th>Waktu</th>
-                            <th>Sensor</th>
-                            <th style="text-align:right;">Debit</th>
-                            <th style="text-align:right;">TMA</th>
-                            <th style="text-align:right;">Suhu</th>
-                            <th style="text-align:right;">Lembap</th>
-                            <th>Status</th>
+                            <th class="text-center">#</th>
+                            <th class="text-center">Waktu</th>
+                            <th class="text-center">Sensor</th>
+                            <th class="text-center">Debit</th>
+                            <th class="text-center">TMA</th>
+                            <th class="text-center">Suhu</th>
+                            <th class="text-center">Lembap</th>
+                            <th class="text-center">Status</th>
                         </tr>
                     </thead>
                     <tbody id="sensor-table-body">
@@ -1278,10 +1367,10 @@ $query_panen = mysqli_query($conn, "
                                     SNS-<?= $row['id_sensor'] ?>
                                 </span>
                             </td>
-                            <td style="text-align:right;font-weight:700;color:var(--ink);"><?= number_format($row['debit'], 1) ?></td>
-                            <td style="text-align:right;color:var(--ink);"><?= $row['tma'] ?> cm</td>
-                            <td style="text-align:right;color:var(--ink);"><?= number_format($row['suhu'], 1) ?>°C</td>
-                            <td style="text-align:right;color:var(--ink);"><?= $row['lembap'] ?>%</td>
+                            <td style="font-weight:700;color:var(--ink);"><?= number_format($row['debit'], 1) ?></td>
+                            <td style="color:var(--ink);"><?= $row['tma'] ?> cm</td>
+                            <td style="color:var(--ink);"><?= number_format($row['suhu'], 1) ?>°C</td>
+                            <td style="color:var(--ink);"><?= $row['lembap'] ?>%</td>
                             <td><span class="sp <?= $status_class ?>"><?= $status_label ?></span></td>
                         </tr>
                         <?php endwhile; else: ?>
@@ -1310,7 +1399,7 @@ $query_panen = mysqli_query($conn, "
     <!-- ============================================================ -->
     <div id="tab-transaksi" class="tab-content <?= $tab === 'transaksi' ? '' : 'hidden' ?>">
         
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 stats-grid">
+        <div class="stats-grid">
             <?php 
             $total_trx = mysqli_num_rows($query_transaksi);
             $lunas = 0; $belum = 0;
@@ -1344,13 +1433,13 @@ $query_panen = mysqli_query($conn, "
                 <table class="w-full border-collapse" style="min-width:700px;">
                     <thead class="table-header">
                         <tr>
-                            <th>#</th>
-                            <th>Tanggal</th>
-                            <th>User</th>
-                            <th>Alat</th>
-                            <th style="text-align:right;">Durasi</th>
-                            <th style="text-align:right;">Total</th>
-                            <th>Status</th>
+                            <th class="text-center">#</th>
+                            <th class="text-center">Tanggal</th>
+                            <th class="text-center">User</th>
+                            <th class="text-center">Alat</th>
+                            <th class="text-center">Durasi</th>
+                            <th class="text-center">Total</th>
+                            <th class="text-center">Status</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1361,10 +1450,10 @@ $query_panen = mysqli_query($conn, "
                         <tr class="table-row">
                             <td style="color:#A79A85;font-weight:600;"><?= $no++ ?></td>
                             <td style="color:#6B5F4F;font-size:0.75rem;"><?= date('d M Y', strtotime($row['tanggal'])) ?></td>
-                            <td style="font-weight:600;color:var(--ink);"><?= htmlspecialchars($row['username']) ?></td>
+                            <td style="font-weight:600;color:var(--ink);"><?= htmlspecialchars($row['user_username'] ?? $row['username'] ?? 'Unknown') ?></td>
                             <td style="color:#4B4032;"><?= htmlspecialchars($row['nama_alat']) ?></td>
-                            <td style="text-align:right;color:#4B4032;"><?= $row['durasi'] ?> hari</td>
-                            <td style="text-align:right;font-weight:700;color:var(--gabah);">Rp <?= number_format($row['total_bayar'], 0, ',', '.') ?></td>
+                            <td style="color:#4B4032;"><?= $row['durasi'] ?> hari</td>
+                            <td style="font-weight:700;color:var(--gabah);">Rp <?= number_format($row['total_bayar'], 0, ',', '.') ?></td>
                             <td><span class="sp <?= $row['status'] == 'lunas' ? 'sp-lunas' : 'sp-belum' ?>"><?= ucfirst($row['status']) ?></span></td>
                         </tr>
                         <?php endwhile; else: ?>
@@ -1384,7 +1473,7 @@ $query_panen = mysqli_query($conn, "
     <!-- ============================================================ -->
     <div id="tab-panen" class="tab-content <?= $tab === 'panen' ? '' : 'hidden' ?>">
         
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 stats-grid">
+        <div class="stats-grid">
             <?php 
             $total_panen = mysqli_num_rows($query_panen);
             $rendeng = 0; $gadu = 0;
@@ -1410,13 +1499,13 @@ $query_panen = mysqli_query($conn, "
                 <table class="w-full border-collapse" style="min-width:700px;">
                     <thead class="table-header">
                         <tr>
-                            <th>#</th>
-                            <th>Tanggal</th>
-                            <th>Petani</th>
-                            <th>Komoditas</th>
-                            <th style="text-align:right;">Luas</th>
-                            <th style="text-align:right;">Hasil</th>
-                            <th>Musim</th>
+                            <th class="text-center">#</th>
+                            <th class="text-center">Tanggal</th>
+                            <th class="text-center">Petani</th>
+                            <th class="text-center">Komoditas</th>
+                            <th class="text-center">Luas</th>
+                            <th class="text-center">Hasil</th>
+                            <th class="text-center">Musim</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1429,8 +1518,8 @@ $query_panen = mysqli_query($conn, "
                             <td style="color:#6B5F4F;font-size:0.75rem;"><?= date('d M Y', strtotime($row['tanggal_panen'])) ?></td>
                             <td style="font-weight:600;color:var(--ink);"><?= htmlspecialchars($row['username'] ?? 'Unknown') ?></td>
                             <td style="color:#4B4032;font-weight:500;"><?= htmlspecialchars($row['komoditas']) ?></td>
-                            <td style="text-align:right;color:#4B4032;"><?= number_format($row['luas_lahan'], 2) ?> Ha</td>
-                            <td style="text-align:right;font-weight:700;color:var(--gabah);"><?= number_format($row['hasil_ton'], 2) ?> Ton</td>
+                            <td style="color:#4B4032;"><?= number_format($row['luas_lahan'], 2) ?> Ha</td>
+                            <td style="font-weight:700;color:var(--gabah);"><?= number_format($row['hasil_ton'], 2) ?> Ton</td>
                             <td><span class="sp <?= $row['musim'] == 'rendeng' ? 'sp-rendeng' : 'sp-gadu' ?>"><?= ucfirst($row['musim']) ?></span></td>
                         </tr>
                         <?php endwhile; else: ?>
@@ -1613,25 +1702,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const STORAGE_KEY = 'sidebar_collapsed_riwayat';
 
-    // Load saved state or default
     function loadSidebarState() {
         const isDesktop = window.innerWidth >= 1024;
         const savedState = localStorage.getItem(STORAGE_KEY);
         
         if (savedState !== null) {
             if (savedState === 'true') {
-                // Collapsed
                 sidebar.classList.remove('open');
                 sidebar.classList.add('collapsed');
                 mainArea.classList.add('sidebar-collapsed');
             } else {
-                // Open
                 sidebar.classList.remove('collapsed');
                 sidebar.classList.add('open');
                 mainArea.classList.remove('sidebar-collapsed');
             }
         } else {
-            // Default: open on desktop, collapsed on mobile
             if (isDesktop) {
                 sidebar.classList.remove('collapsed');
                 sidebar.classList.add('open');
@@ -1645,7 +1730,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Ensure overlay is hidden on desktop
         if (isDesktop) {
             overlay.classList.remove('open');
             document.body.style.overflow = '';
@@ -1661,7 +1745,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (isDesktop && !isCollapsed) {
             mainArea.classList.remove('sidebar-collapsed');
         } else {
-            // Mobile: always full width
             mainArea.classList.add('sidebar-collapsed');
         }
     }
@@ -1686,8 +1769,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function toggleSidebar() {
         const isOpen = sidebar.classList.contains('open');
-        const isDesktop = window.innerWidth >= 1024;
-        
         if (isOpen) {
             closeSidebar();
         } else {
@@ -1695,7 +1776,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Event Listeners
     if (toggleHamburger) {
         toggleHamburger.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -1723,7 +1803,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Handle resize
     let resizeTimeout;
     window.addEventListener('resize', function() {
         clearTimeout(resizeTimeout);
@@ -1732,7 +1811,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const savedState = localStorage.getItem(STORAGE_KEY);
             
             if (isDesktop) {
-                // On desktop, respect saved state
                 if (savedState === 'true') {
                     sidebar.classList.remove('open');
                     sidebar.classList.add('collapsed');
@@ -1745,7 +1823,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 overlay.classList.remove('open');
                 document.body.style.overflow = '';
             } else {
-                // On mobile, always collapsed unless explicitly opened
                 if (!sidebar.classList.contains('open')) {
                     sidebar.classList.add('collapsed');
                     mainArea.classList.add('sidebar-collapsed');
@@ -1756,21 +1833,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 200);
     });
 
-    // Keyboard shortcut: ESC to close
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && sidebar.classList.contains('open')) {
             closeSidebar();
         }
     });
 
-    // Load state on page load
     loadSidebarState();
-    
-    // Ensure main area is correct
     updateMainArea();
 });
 
-// ===== CUSTOMER SERVICE MODAL =====
 function openCSModal() {
     const modal = document.getElementById('csModal');
     if (modal) {
@@ -1787,7 +1859,6 @@ function closeCSModal() {
     }
 }
 
-// Close modal on overlay click
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('csModal');
     if (modal) {
@@ -1799,7 +1870,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// ESC to close modal
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         const modal = document.getElementById('csModal');
@@ -1811,11 +1881,10 @@ document.addEventListener('keydown', function(e) {
 </script>
 
 <!-- ============================================ -->
-<!-- AUTO UPDATE SENSOR - SINKRON DENGAN INDEX.PHP -->
+<!-- AUTO UPDATE SENSOR                           -->
 <!-- ============================================ -->
 <?php if ($tab === 'sensor'): ?>
 <script>
-// Data sensor yang sama dengan index.php
 var dataSensor = [
   {id:"SNS-01", lokasi:"Saluran Induk Ngidul", debit:12.4, tma:42, suhu:26.8, lembap:68, status:"normal"},
   {id:"SNS-02", lokasi:"Percabangan Blok A",   debit:8.7,  tma:35, suhu:27.1, lembap:72, status:"normal"},
@@ -1844,14 +1913,14 @@ function renderTabelSensor() {
   var html = '';
   dataSensor.forEach(function(s, i) {
     html += '<tr class="table-row row-fade-in">';
-    html += '<td style="color:#A79A85;font-weight:600;text-align:center;">' + (i+1) + '</td>';
-    html += '<td style="color:#6B5F4F;font-size:0.75rem;text-align:center;">' + waktu() + '</td>';
-    html += '<td style="text-align:center;"><span class="text-xs font-bold px-2 py-0.5 rounded" style="background:rgba(47,82,51,0.10);color:var(--sawah);border:1px solid rgba(47,82,51,0.18);font-family:\'JetBrains Mono\',monospace;">' + s.id + '</span></td>';
-    html += '<td style="text-align:right;font-weight:700;color:var(--ink);">' + s.debit.toFixed(1) + '</td>';
-    html += '<td style="text-align:right;color:var(--ink);">' + s.tma + ' cm</td>';
-    html += '<td style="text-align:right;color:var(--ink);">' + s.suhu.toFixed(1) + '°C</td>';
-    html += '<td style="text-align:right;color:var(--ink);">' + s.lembap + '%</td>';
-    html += '<td style="text-align:center;">' + pill(s.status) + '</td>';
+    html += '<td style="color:#A79A85;font-weight:600;">' + (i+1) + '</td>';
+    html += '<td style="color:#6B5F4F;font-size:0.75rem;">' + waktu() + '</td>';
+    html += '<td><span class="text-xs font-bold px-2 py-0.5 rounded" style="background:rgba(47,82,51,0.10);color:var(--sawah);border:1px solid rgba(47,82,51,0.18);font-family:\'JetBrains Mono\',monospace;">' + s.id + '</span></td>';
+    html += '<td style="font-weight:700;color:var(--ink);">' + s.debit.toFixed(1) + '</td>';
+    html += '<td style="color:var(--ink);">' + s.tma + ' cm</td>';
+    html += '<td style="color:var(--ink);">' + s.suhu.toFixed(1) + '°C</td>';
+    html += '<td style="color:var(--ink);">' + s.lembap + '%</td>';
+    html += '<td>' + pill(s.status) + '</td>';
     html += '</tr>';
   });
   document.getElementById('sensor-table-body').innerHTML = html;
@@ -1859,17 +1928,11 @@ function renderTabelSensor() {
 }
 
 function hitungRingkasanSensor() {
-  var td = 0, tt = 0, ts = 0, tl = 0, n = 0, k = 0, c = dataSensor.length;
-  
+  var n = 0, k = 0, c = dataSensor.length;
   dataSensor.forEach(function(s) { 
-    td += s.debit;
-    tt += s.tma;
-    ts += s.suhu;
-    tl += s.lembap;
     if (s.status === 'normal') n++;
     else if (s.status === 'kritis') k++;
   });
-  
   document.getElementById('stat-total').textContent = c;
   document.getElementById('stat-normal').textContent = n;
   document.getElementById('stat-kritis').textContent = k;
@@ -1890,10 +1953,7 @@ function perbaruiSensorRiwayat() {
   renderTabelSensor();
 }
 
-// Render awal
 renderTabelSensor();
-
-// Update setiap 4 detik (sinkron dengan index.php)
 setInterval(perbaruiSensorRiwayat, 4000);
 </script>
 <?php endif; ?>
