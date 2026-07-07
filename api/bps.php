@@ -11,24 +11,26 @@ ini_set('display_errors', '1');
 require_once __DIR__ . '/koneksi.php';
 require_once __DIR__ . '/auth_helper.php';
 
-// Cek apakah user login
-if (!$is_logged_in) {
+// ============================================================
+// CEK LOGIN - MENGGUNAKAN FUNGSI DARI AUTH_HELPER
+// ============================================================
+if (!isLoggedIn()) {
     header("Location: login.php");
     exit();
 }
 
-// Ambil role user dari database jika belum tersedia
-if (!isset($user_role) || empty($user_role)) {
-    $query_role = mysqli_query($conn, "SELECT role FROM users WHERE id_users = $user_id");
-    if ($query_role && mysqli_num_rows($query_role) > 0) {
-        $data_role = mysqli_fetch_assoc($query_role);
-        $user_role = $data_role['role'] ?? 'guest';
-    } else {
-        $user_role = 'guest';
-    }
-}
+// ============================================================
+// AMBIL DATA USER DARI AUTH_HELPER
+// ============================================================
+$userData = getCurrentUser();
+$user_id = $userData['id'];
+$username = $userData['username'];
+$namaDepan = $userData['nama_depan'] ?? $username;
+$role = $userData['role'] ?? 'guest';
 
-// Fungsi untuk mengambil data dari API BPS menggunakan cURL
+// ============================================================
+// FUNGSI UNTUK MENGAMBIL DATA DARI API BPS MENGGUNAKAN cURL
+// ============================================================
 function fetchBPS(string $url): ?array {
     if (!function_exists('curl_init')) return null;
     $ch = curl_init($url);
@@ -48,7 +50,9 @@ function fetchBPS(string $url): ?array {
     return json_last_error() === JSON_ERROR_NONE ? $data : null;
 }
 
-// Fungsi untuk mengekstrak baris data dari struktur response BPS
+// ============================================================
+// FUNGSI UNTUK MENGEKSTRAK BARIS DATA DARI STRUKTUR RESPONSE BPS
+// ============================================================
 function parseBPS(array $response): array {
     $rows  = $response['data'][1]['data']  ?? [];
     $judul = $response['data'][1]['judul_tabel'] ?? '';
@@ -69,22 +73,29 @@ function parseBPS(array $response): array {
     return ['rows' => $result, 'judul' => $judul];
 }
 
+// ============================================================
 // URL API BPS
+// ============================================================
 $API_URL = 'https://webapi.bps.go.id/v1/api/interoperabilitas/datasource/simdasi/id/25/tahun/2025/id_tabel/ZjZ6MXlacGJNR0JaaHBPRSs0TzNUdz09/wilayah/3300000/key/cc819bdc45f65b22eebcb08f167d0e08';
 
-// Eksekusi pengambilan dan parsing data
+// ============================================================
+// EKSEKUSI PENGAMBILAN DAN PARSING DATA
+// ============================================================
 $raw      = fetchBPS($API_URL);
 $parsed   = $raw ? parseBPS($raw) : ['rows' => [], 'judul' => ''];
 $listData = $parsed['rows'];
 $judul    = $parsed['judul'];
 $hasData  = count($listData) > 0;
 
-// Hitung statistik agregat
+// ============================================================
+// HITUNG STATISTIK AGREGAT
+// ============================================================
 $totalLuas     = array_sum(array_column($listData, 'luas_panen'));
 $totalProduksi = array_sum(array_column($listData, 'produksi'));
 $jumlah        = count($listData);
 $terluas       = $listData[0] ?? null;
 $rataProduktiv = $jumlah > 0 ? array_sum(array_column($listData, 'produktivitas')) / $jumlah : 0;
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
