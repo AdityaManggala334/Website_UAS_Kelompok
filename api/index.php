@@ -1376,7 +1376,7 @@ unset($_SESSION['pesan_laporan'], $_SESSION['pesan_warna']);
 
     <!-- ===== EDUKASI ===== -->
     <div class="sidebar-section-label">Edukasi</div>
-    <a href="api/konten_edukasi.php" class="nav-link">
+    <a href="konten_edukasi.php" class="nav-link">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M4 6h16M4 12h16M4 18h10"/>
         <rect x="2" y="2" width="20" height="20" rx="2"/>
