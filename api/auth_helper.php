@@ -1,7 +1,7 @@
 <?php
 // api/auth_helper.php
 // ======================================================
-// AUTHENTICATION HELPER - LADUSYNC
+// AUTHENTICATION HELPER - LADUSYNC (DENGAN JWT)
 // ======================================================
 
 ob_start();
@@ -11,96 +11,102 @@ ini_set('display_errors', 1);
 require_once __DIR__ . '/koneksi.php';
 
 // ============================================================
-// CEK SESSION ATAU COOKIE (Support kedua metode)
+// FUNGSI VERIFIKASI JWT
 // ============================================================
 
-// Mulai session jika belum
+function verifyJWT($token) {
+    $parts = explode('.', $token);
+    if (count($parts) !== 3) return null;
+    
+    list($header, $payload, $signature) = $parts;
+    $expectedSignature = base64_encode(hash_hmac('sha256', $header . '.' . $payload, 'LADUSYNC_SECRET_KEY', true));
+    
+    if ($signature !== $expectedSignature) return null;
+    
+    $data = json_decode(base64_decode($payload), true);
+    if (!$data || isset($data['exp']) && $data['exp'] < time()) return null;
+    
+    return $data;
+}
+
+// ============================================================
+// MULAI SESSION
+// ============================================================
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// === CEK SESSION TERLEBIH DAHULU ===
-if (isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
-    $uid = (int)$_SESSION['user_id'];
-    $is_logged_in = true;
-} 
-// === JIKA SESSION TIDAK ADA, CEK COOKIE ===
-elseif (isset($_COOKIE['sm_uid'])) {
-    $uid = (int)$_COOKIE['sm_uid'];
-    $is_logged_in = true;
-    
-    // Sinkronkan cookie ke session
-    $_SESSION['user_id'] = $uid;
-} 
-// === TIDAK ADA SESSION ATAU COOKIE ===
-else {
-    $uid = 0;
-    $is_logged_in = false;
+// ============================================================
+// CEK LOGIN: JWT > SESSION > COOKIE (sm_uid)
+// ============================================================
+
+$is_logged_in = false;
+$user_id = 0;
+$username = 'Guest';
+$namaDepan = 'Guest';
+$namaBelakang = '';
+$namaLengkap = 'Pengunjung Umum';
+$email = '';
+$role = 'guest';
+
+// === 1. CEK JWT DARI COOKIE (Prioritas Utama) ===
+if (isset($_COOKIE['auth_token'])) {
+    $tokenData = verifyJWT($_COOKIE['auth_token']);
+    if ($tokenData) {
+        $user_id = $tokenData['user_id'];
+        $username = $tokenData['username'] ?? 'User';
+        $namaDepan = $tokenData['nama_depan'] ?? $username;
+        $role = $tokenData['role'] ?? 'guest';
+        $is_logged_in = true;
+        $namaLengkap = $namaDepan;
+        
+        // Sinkronkan ke session (fallback)
+        $_SESSION['user_id'] = $user_id;
+        $_SESSION['username'] = $username;
+        $_SESSION['role'] = $role;
+        $_SESSION['nama_depan'] = $namaDepan;
+    }
 }
 
-// ============================================================
-// AMBIL DATA USER DARI DATABASE
-// ============================================================
+// === 2. FALLBACK: CEK SESSION (jika JWT tidak ada) ===
+if (!$is_logged_in && isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
+    $user_id = (int)$_SESSION['user_id'];
+    $username = $_SESSION['username'] ?? 'User';
+    $namaDepan = $_SESSION['nama_depan'] ?? $username;
+    $role = $_SESSION['role'] ?? 'guest';
+    $is_logged_in = true;
+    $namaLengkap = $namaDepan;
+}
 
-if ($uid > 0) {
+// === 3. FALLBACK: CEK COOKIE LAMA (sm_uid) ===
+if (!$is_logged_in && isset($_COOKIE['sm_uid'])) {
+    $uid = (int)$_COOKIE['sm_uid'];
     $stmt = mysqli_prepare($conn,
-        "SELECT id_users, nama_depan, nama_belakang, username, email, role
-         FROM users WHERE id_users = ? LIMIT 1"
+        "SELECT id_users, username, nama_depan, role FROM users WHERE id_users = ? LIMIT 1"
     );
-    mysqli_stmt_bind_param($stmt, 'i', $uid);
-    mysqli_stmt_execute($stmt);
-    $res = mysqli_stmt_get_result($stmt);
-    $user = mysqli_fetch_assoc($res);
-    mysqli_stmt_close($stmt);
-    
-    if ($user) {
-        // Set variabel user
-        $user_id      = (int)$user['id_users'];
-        $username     = $user['username'];
-        $nama_depan   = $user['nama_depan'];
-        $nama_belakang = $user['nama_belakang'];
-        $email        = $user['email'] ?? '';
-        $role         = $user['role'];
+    if ($stmt) {
+        mysqli_stmt_bind_param($stmt, 'i', $uid);
+        mysqli_stmt_execute($stmt);
+        $res = mysqli_stmt_get_result($stmt);
+        $user = mysqli_fetch_assoc($res);
+        mysqli_stmt_close($stmt);
         
-        $namaDepan   = htmlspecialchars($nama_depan ?: $username);
-        $namaBelakang = htmlspecialchars($nama_belakang ?? '');
-        $namaLengkap = htmlspecialchars(trim($nama_depan . ' ' . $nama_belakang) ?: $username);
-        
-        // Sinkronkan session jika login via cookie
-        if (!isset($_SESSION['user_id'])) {
+        if ($user) {
+            $user_id = $user['id_users'];
+            $username = $user['username'];
+            $namaDepan = $user['nama_depan'] ?? $username;
+            $role = $user['role'] ?? 'guest';
+            $is_logged_in = true;
+            $namaLengkap = $namaDepan;
+            
+            // Sinkronkan ke session
             $_SESSION['user_id'] = $user_id;
             $_SESSION['username'] = $username;
-            $_SESSION['nama_depan'] = $nama_depan;
-            $_SESSION['nama_belakang'] = $nama_belakang;
-            $_SESSION['email'] = $email;
             $_SESSION['role'] = $role;
+            $_SESSION['nama_depan'] = $namaDepan;
         }
-        
-        $is_logged_in = true;
-    } else {
-        // User tidak ditemukan, hapus cookie/session
-        setcookie('sm_uid', '', time() - 3600, '/');
-        unset($_SESSION['user_id']);
-        $is_logged_in = false;
-        
-        // Set default guest values
-        $user_id = 0;
-        $username = 'Guest';
-        $namaDepan = 'Guest';
-        $namaBelakang = '';
-        $namaLengkap = 'Pengunjung Umum';
-        $email = '';
-        $role = 'guest';
     }
-} else {
-    // Guest / Tidak login
-    $user_id = 0;
-    $username = 'Guest';
-    $namaDepan = 'Guest';
-    $namaBelakang = '';
-    $namaLengkap = 'Pengunjung Umum';
-    $email = '';
-    $role = 'guest';
 }
 
 // ============================================================
@@ -118,10 +124,10 @@ function isLoggedIn() {
 /**
  * Cek apakah user memiliki role tertentu
  */
-function hasRole($role) {
+function hasRole($roleCheck) {
     global $role;
     if (!isLoggedIn()) return false;
-    return $role === $role;
+    return $role === $roleCheck;
 }
 
 /**
@@ -163,8 +169,4 @@ function getCurrentUser() {
     ];
 }
 
-// ============================================================
-// DEBUG (Hapus di production)
-// ============================================================
-// error_log("AUTH: user_id=" . ($user_id ?? 0) . ", is_logged_in=" . ($is_logged_in ? 'true' : 'false'));
 ?>
