@@ -1214,10 +1214,10 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                             <td data-label="Alat"><?= htmlspecialchars($row['nama_alat']) ?></td>
                             <td data-label="Total" style="font-weight:700;color:#059669;">Rp <?= number_format($row['total_bayar'], 0, ',', '.') ?></td>
                             <td data-label="Bukti">
-                                <?php if (!empty($row['bukti_transfer']) && file_exists(__DIR__ . '/../' . $row['bukti_transfer'])): ?>
-                                    <img src="../<?= $row['bukti_transfer'] ?>" class="bukti-preview" 
-                                         onclick="window.open('../<?= $row['bukti_transfer'] ?>', '_blank')"
-                                         title="Klik untuk lihat bukti">
+                                <?php if (!empty($row['bukti_transfer'])): ?>
+                                    <img src="<?= htmlspecialchars($row['bukti_transfer']) ?>" class="bukti-preview" 
+                                         onclick="window.open('<?= htmlspecialchars($row['bukti_transfer']) ?>', '_blank')"
+                                         title="Klik untuk lihat bukti" onerror="this.src='https://placehold.co/80x60?text=Error'">
                                 <?php else: ?>
                                     <span style="font-size:0.65rem;color:#94A3B8;">Belum upload</span>
                                 <?php endif; ?>
@@ -1227,12 +1227,12 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                                     <form method="POST" onsubmit="return confirm('Verifikasi pembayaran ini dan generate QR Code?')">
                                         <input type="hidden" name="aksi" value="verifikasi_pembayaran">
                                         <input type="hidden" name="id_peminjaman" value="<?= $row['id'] ?>">
-                                        <button type="submit" class="tbl-btn tbl-btn-green" style="padding:5px 12px;">✅ Verifikasi</button>
+                                        <button type="submit" class="tbl-btn tbl-btn-green" style="padding:5px 12px;">Verifikasi</button>
                                     </form>
                                     <form method="POST" onsubmit="return confirm('Tolak pembayaran ini? Stok akan dikembalikan.')">
                                         <input type="hidden" name="aksi" value="tolak_pembayaran">
                                         <input type="hidden" name="id_peminjaman" value="<?= $row['id'] ?>">
-                                        <button type="submit" class="tbl-btn tbl-btn-red" style="padding:5px 12px;">❌ Tolak</button>
+                                        <button type="submit" class="tbl-btn tbl-btn-red" style="padding:5px 12px;">Tolak</button>
                                     </form>
                                 </div>
                             </td>
@@ -1300,7 +1300,7 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                                     <input type="hidden" name="aksi" value="konfirmasi_ambil">
                                     <input type="hidden" name="id_peminjaman" value="<?= $row['id'] ?>">
                                     <button type="submit" class="tbl-btn tbl-btn-blue" style="padding:5px 12px;">
-                                        📤 Konfirmasi Ambil
+                                        Konfirmasi Ambil
                                     </button>
                                 </form>
                             </td>
@@ -1529,7 +1529,7 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                     <?php $isEdit = $edit_alat !== null; ?>
                     <div style="background:<?= $isEdit ? '#FFFBEB' : '#F8FAFC' ?>;border:1px solid <?= $isEdit ? '#FDE68A' : 'rgba(138,115,87,0.12)' ?>;border-radius:12px;padding:1rem;margin-bottom:1.5rem;">
                         <?php if ($isEdit): ?>
-                            <div style="font-weight:600;color:#92400E;margin-bottom:0.5rem;">✏️ Mode Edit: <span style="font-weight:700;"><?= htmlspecialchars($edit_alat['nama_alat']) ?></span></div>
+                            <div style="font-weight:600;color:#92400E;margin-bottom:0.5rem;"> Mode Edit: <span style="font-weight:700;"><?= htmlspecialchars($edit_alat['nama_alat']) ?></span></div>
                         <?php endif; ?>
                         <form method="POST" id="formAlat">
                             <input type="hidden" name="aksi" value="<?= $isEdit ? 'edit_alat' : 'tambah_alat' ?>">
@@ -1663,13 +1663,13 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                             <td data-label="Metode"><span style="font-size:0.7rem;color:#4B7563;"><?= htmlspecialchars($row['metode_bayar']) ?></span></td>
                             <td data-label="Status">
                                 <?php if ($row['status'] === 'lunas'): ?>
-                                    <span class="status-badge status-lunas">✅ Lunas</span>
+                                    <span class="status-badge status-lunas">Lunas</span>
                                 <?php elseif ($row['status'] === 'dipinjam'): ?>
-                                    <span class="status-badge status-dipinjam">📋 Dipinjam</span>
+                                    <span class="status-badge status-dipinjam">Dipinjam</span>
                                 <?php elseif ($row['status'] === 'menunggu_verifikasi'): ?>
-                                    <span class="status-badge status-menunggu">⏳ Menunggu Verifikasi</span>
+                                    <span class="status-badge status-menunggu">Menunggu Verifikasi</span>
                                 <?php elseif ($row['status'] === 'dikembalikan' || $row['status'] === 'selesai'): ?>
-                                    <span class="status-badge status-selesai">✅ Selesai</span>
+                                    <span class="status-badge status-selesai">Selesai</span>
                                 <?php else: ?>
                                     <span class="status-badge status-belum">⏳ <?= ucfirst(str_replace('_', ' ', $row['status'])) ?></span>
                                 <?php endif; ?>
@@ -1682,7 +1682,7 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                                         <button type="submit" class="tbl-btn tbl-btn-green" style="padding:4px 10px;font-size:0.65rem;">✓ Set Lunas</button>
                                     </form>
                                 <?php else: ?>
-                                    <span style="font-size:0.65rem;color:#94A3B8;"><?= $row['status'] === 'lunas' ? '✅ Lunas' : ($row['status'] === 'dipinjam' ? '📋 Dipinjam' : '✅ Selesai') ?></span>
+                                    <span style="font-size:0.65rem;color:#94A3B8;"><?= $row['status'] === 'lunas' ? 'Lunas' : ($row['status'] === 'dipinjam' ? 'Dipinjam' : 'Selesai') ?></span>
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -1715,7 +1715,7 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
 <div class="modal-overlay" id="kembaliModal">
     <div class="modal-box">
         <button class="close-btn" onclick="closeKembaliModal()">&times;</button>
-        <h2 style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:700;color:var(--sawah);margin-bottom:1rem;">📥 Konfirmasi Pengembalian Alat</h2>
+        <h2 style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:700;color:var(--sawah);margin-bottom:1rem;">Konfirmasi Pengembalian Alat</h2>
         
         <form method="POST" id="formKembali">
             <input type="hidden" name="aksi" value="konfirmasi_kembali">
@@ -1768,7 +1768,7 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
             </div>
 
             <div style="display:flex;gap:8px;">
-                <button type="submit" class="tbl-btn tbl-btn-green" style="padding:8px 20px;font-size:0.8rem;">✅ Konfirmasi Kembali</button>
+                <button type="submit" class="tbl-btn tbl-btn-green" style="padding:8px 20px;font-size:0.8rem;">Konfirmasi Kembali</button>
                 <button type="button" class="tbl-btn" style="padding:8px 20px;font-size:0.8rem;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;" onclick="closeKembaliModal()">Batal</button>
             </div>
         </form>
