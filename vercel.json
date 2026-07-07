@@ -1,17 +1,19 @@
 {
   "version": 2,
-  "functions": {
-    "api/*.php": {
-      "runtime": "vercel-php@0.7.1"
-    },
-    "index.php": {
-      "runtime": "vercel-php@0.7.1"
+  "builds": [
+    {
+      "src": "api/**/*.php",
+      "use": "@vercel/php@1.0.0"
     }
-  },
+  ],
   "routes": [
     {
-      "src": "/$",
-      "dest": "/index.php"
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
     },
     {
       "src": "/login",
@@ -24,6 +26,14 @@
     {
       "src": "/dashboard",
       "dest": "/api/dashboard.php"
+    },
+    {
+      "src": "/riwayat",
+      "dest": "/api/riwayat.php"
+    },
+    {
+      "src": "/daftar-alat",
+      "dest": "/api/daftar_alat.php"
     },
     {
       "src": "/(.*)",
