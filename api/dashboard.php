@@ -1383,7 +1383,7 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                             <td data-label="Aksi">
                                 <button onclick="openKembaliModal(<?= $row['id'] ?>, '<?= addslashes($row['nama_alat']) ?>', <?= $denda ?>, <?= $hari_terlambat ?>, <?= $row['total_bayar'] ?>, <?= $row['durasi'] ?>)" 
                                         class="tbl-btn tbl-btn-purple" style="padding:5px 12px;cursor:pointer;">
-                                    📥 Konfirmasi Kembali
+                                    Konfirmasi Kembali
                                 </button>
                             </td>
                         </tr>
