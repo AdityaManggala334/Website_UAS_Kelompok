@@ -889,8 +889,8 @@ unset($_SESSION['success'], $_SESSION['error']);
                                     </td>
                                     <td class="text-center py-3 px-3">
                                         <div class="flex gap-2 justify-center flex-wrap">
-                                            <a href="?edit_lahan_id=<?= $row['id'] ?>#lahan" class="btn-edit">✏️ Edit</a>
-                                            <a href="?hapus_lahan=<?= $row['id'] ?>" class="btn-danger" onclick="return confirm('Yakin hapus lahan ini?')">🗑️ Hapus</a>
+                                            <a href="?edit_lahan_id=<?= $row['id'] ?>#lahan" class="btn-edit">Edit</a>
+                                            <a href="?hapus_lahan=<?= $row['id'] ?>" class="btn-danger" onclick="return confirm('Yakin hapus lahan ini?')">Hapus</a>
                                         </div>
                                     </td>
                                 </tr>
@@ -936,7 +936,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                                     </td>
                                     <td class="text-center py-3 px-3">
                                         <div class="flex gap-2 justify-center">
-                                            <a href="?hapus_panen=<?= $row['id_panen'] ?>" class="btn-danger" onclick="return confirm('Yakin hapus data panen ini?')">🗑️ Hapus</a>
+                                            <a href="?hapus_panen=<?= $row['id_panen'] ?>" class="btn-danger" onclick="return confirm('Yakin hapus data panen ini?')">Hapus</a>
                                         </div>
                                     </td>
                                 </tr>
