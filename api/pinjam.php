@@ -668,12 +668,9 @@ $metode_list = [
 
         <!-- Buttons -->
         <div class="btn-group">
-            <button type="submit" class="btn btn-primary">
-                🛒 Lanjut ke Pembayaran
-            </button>
+            <a href="pembayaran.php" class="btn btn-primary">🛒 Lanjut ke Pembayaran</a>
             <a href="daftar_alat.php" class="btn btn-secondary">Batal</a>
-        </div>
-    </form>
+        </form>
 
 </div>
 
