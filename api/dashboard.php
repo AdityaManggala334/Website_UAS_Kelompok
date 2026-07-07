@@ -6,11 +6,7 @@ ob_start();
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
-require_once __DIR__ . '/koneksi.php';
 require_once __DIR__ . '/auth_helper.php';
-
-// ===== PASTIKAN VARIABEL $is_logged_in TERSEDIA =====
-$is_logged_in = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0;
 
 // Cek apakah user yang login adalah administrator
 if ($role !== 'administrator') {
@@ -21,16 +17,9 @@ if ($role !== 'administrator') {
 $adminNama = $namaLengkap;
 $adminId   = (int)$user_id;
 
-// ===== BUAT FOLDER UPLOAD DENGAN AMAN =====
-$uploadDir = __DIR__ . '/uploads/alat/';
-if (!file_exists($uploadDir)) {
-    if (!mkdir($uploadDir, 0755, true)) {
-        mkdir($uploadDir, 0777, true);
-    }
-    @file_put_contents($uploadDir . 'index.html', '<!DOCTYPE html><html><head><title>403 Forbidden</title></head><body><h1>Forbidden</h1></body></html>');
-}
-
-// ===== FUNGSI GENERATE QR CODE =====
+// ============================================================
+// FUNGSI GENERATE QR CODE
+// ============================================================
 function generateQRCode($conn, $id_peminjaman) {
     $max_attempts = 10;
     $attempt = 0;
@@ -44,25 +33,6 @@ function generateQRCode($conn, $id_peminjaman) {
         $attempt++;
     }
     return 'QR-' . date('Ymd') . '-' . $id_peminjaman . '-' . time();
-}
-
-// ===== FUNGSI UPLOAD GAMBAR =====
-function uploadAndCropImage($base64Image, $uploadDir) {
-    if (empty($base64Image)) return null;
-    $imageParts = explode(';base64,', $base64Image);
-    if (count($imageParts) < 2) return null;
-    $imageType = explode('/', $imageParts[0]);
-    $imageType = strtolower($imageType[1] ?? 'jpeg');
-    $allowedTypes = ['jpeg', 'jpg', 'png', 'gif', 'webp'];
-    if (!in_array($imageType, $allowedTypes)) return null;
-    $imageBase64 = base64_decode($imageParts[1]);
-    if ($imageBase64 === false || strlen($imageBase64) < 100) return null;
-    $filename = uniqid() . '_' . time() . '.' . $imageType;
-    $filepath = $uploadDir . $filename;
-    if (file_put_contents($filepath, $imageBase64) !== false) {
-        return 'uploads/alat/' . $filename;
-    }
-    return null;
 }
 
 // ============================================================
@@ -116,67 +86,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi'])) {
         exit();
     }
 
-    // Aksi 4: Tambah alat
+    // Aksi 4: Tambah alat (tanpa upload file - pakai URL)
     if ($_POST['aksi'] === 'tambah_alat') {
-        $nama = mysqli_real_escape_string($conn, $_POST['nama_alat'] ?? '');
+        $nama = mysqli_real_escape_string($conn, trim($_POST['nama_alat'] ?? ''));
         $harga = (float)($_POST['harga'] ?? 0);
         $stok = (int)($_POST['stok'] ?? 0);
-        $deskripsi = mysqli_real_escape_string($conn, $_POST['deskripsi'] ?? '');
-        $gambar_cropped = $_POST['gambar_cropped'] ?? '';
+        $deskripsi = mysqli_real_escape_string($conn, trim($_POST['deskripsi'] ?? ''));
+        $gambar_url = mysqli_real_escape_string($conn, trim($_POST['gambar_url'] ?? ''));
 
-        if (!empty($nama) && !empty($gambar_cropped)) {
-            $gambar_path = uploadAndCropImage($gambar_cropped, $uploadDir);
-            if ($gambar_path) {
-                $st = mysqli_prepare($conn, "INSERT INTO alat (nama_alat, harga, stok, deskripsi, gambar) VALUES (?, ?, ?, ?, ?)");
-                mysqli_stmt_bind_param($st, 'sdiss', $nama, $harga, $stok, $deskripsi, $gambar_path);
-                if (mysqli_stmt_execute($st)) {
-                    mysqli_stmt_close($st);
-                    header("Location: dashboard.php?msg=alat_ok#alat");
-                } else {
-                    header("Location: dashboard.php?msg=alat_err#alat");
-                }
-            } else {
-                header("Location: dashboard.php?msg=alat_err#alat");
-            }
+        if (empty($nama)) {
+            header("Location: dashboard.php?msg=alat_err#alat");
+            exit();
+        }
+
+        // Gunakan gambar default jika URL kosong
+        if (empty($gambar_url)) {
+            $gambar_url = 'https://placehold.co/600x400/e2e8f0/64748b?text=' . urlencode($nama);
+        }
+
+        $st = mysqli_prepare($conn, "INSERT INTO alat (nama_alat, harga, stok, deskripsi, gambar) VALUES (?, ?, ?, ?, ?)");
+        mysqli_stmt_bind_param($st, 'sdiss', $nama, $harga, $stok, $deskripsi, $gambar_url);
+        
+        if (mysqli_stmt_execute($st)) {
+            mysqli_stmt_close($st);
+            header("Location: dashboard.php?msg=alat_ok#alat");
         } else {
+            mysqli_stmt_close($st);
             header("Location: dashboard.php?msg=alat_err#alat");
         }
         exit();
     }
 
-    // Aksi 5: Edit alat
+    // Aksi 5: Edit alat (tanpa upload file - pakai URL)
     if ($_POST['aksi'] === 'edit_alat') {
         $id = (int)($_POST['id_alat'] ?? 0);
-        $nama = mysqli_real_escape_string($conn, $_POST['nama_alat'] ?? '');
+        $nama = mysqli_real_escape_string($conn, trim($_POST['nama_alat'] ?? ''));
         $harga = (float)($_POST['harga'] ?? 0);
         $stok = (int)($_POST['stok'] ?? 0);
-        $deskripsi = mysqli_real_escape_string($conn, $_POST['deskripsi'] ?? '');
-        $gambar_cropped = $_POST['gambar_cropped'] ?? '';
+        $deskripsi = mysqli_real_escape_string($conn, trim($_POST['deskripsi'] ?? ''));
+        $gambar_url = mysqli_real_escape_string($conn, trim($_POST['gambar_url'] ?? ''));
 
-        if ($id > 0 && !empty($nama)) {
-            if (!empty($gambar_cropped)) {
-                $q = mysqli_query($conn, "SELECT gambar FROM alat WHERE id='$id'");
-                $old = mysqli_fetch_assoc($q);
-                if ($old && !empty($old['gambar'])) {
-                    $oldPath = __DIR__ . '/' . $old['gambar'];
-                    if (file_exists($oldPath)) @unlink($oldPath);
-                }
-                $gambar_path = uploadAndCropImage($gambar_cropped, $uploadDir);
-                if ($gambar_path) {
-                    $st = mysqli_prepare($conn, "UPDATE alat SET nama_alat=?, harga=?, stok=?, deskripsi=?, gambar=? WHERE id=?");
-                    mysqli_stmt_bind_param($st, 'sdissi', $nama, $harga, $stok, $deskripsi, $gambar_path, $id);
-                } else {
-                    header("Location: dashboard.php?msg=alat_err#alat");
-                    exit();
-                }
-            } else {
-                $st = mysqli_prepare($conn, "UPDATE alat SET nama_alat=?, harga=?, stok=?, deskripsi=? WHERE id=?");
-                mysqli_stmt_bind_param($st, 'sdissi', $nama, $harga, $stok, $deskripsi, $id);
-            }
-            mysqli_stmt_execute($st);
+        if ($id <= 0 || empty($nama)) {
+            header("Location: dashboard.php?msg=alat_err#alat");
+            exit();
+        }
+
+        if (!empty($gambar_url)) {
+            $st = mysqli_prepare($conn, "UPDATE alat SET nama_alat=?, harga=?, stok=?, deskripsi=?, gambar=? WHERE id=?");
+            mysqli_stmt_bind_param($st, 'sdissi', $nama, $harga, $stok, $deskripsi, $gambar_url, $id);
+        } else {
+            $st = mysqli_prepare($conn, "UPDATE alat SET nama_alat=?, harga=?, stok=?, deskripsi=? WHERE id=?");
+            mysqli_stmt_bind_param($st, 'sdissi', $nama, $harga, $stok, $deskripsi, $id);
+        }
+        
+        if (mysqli_stmt_execute($st)) {
             mysqli_stmt_close($st);
             header("Location: dashboard.php?msg=alat_ok#alat");
         } else {
+            mysqli_stmt_close($st);
             header("Location: dashboard.php?msg=alat_err#alat");
         }
         exit();
@@ -186,12 +153,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi'])) {
     if ($_POST['aksi'] === 'hapus_alat') {
         $id = (int)($_POST['id_alat'] ?? 0);
         if ($id > 0) {
-            $q = mysqli_query($conn, "SELECT gambar FROM alat WHERE id='$id'");
-            $row = mysqli_fetch_assoc($q);
-            if ($row && !empty($row['gambar'])) {
-                $filePath = __DIR__ . '/' . $row['gambar'];
-                if (file_exists($filePath)) @unlink($filePath);
-            }
             $st = mysqli_prepare($conn, "DELETE FROM alat WHERE id=?");
             mysqli_stmt_bind_param($st, 'i', $id);
             mysqli_stmt_execute($st);
@@ -201,41 +162,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi'])) {
         exit();
     }
 
-    // ============================================================
-    // AKSI BARU: VERIFIKASI PEMBAYARAN + QR CODE
-    // ============================================================
+    // Aksi 7: Verifikasi pembayaran + QR Code
     if ($_POST['aksi'] === 'verifikasi_pembayaran') {
         $id = (int)($_POST['id_peminjaman'] ?? 0);
         
         if ($id > 0) {
-            // Generate QR Code
             $qr_code = generateQRCode($conn, $id);
-            $qr_time = date('Y-m-d H:i:s');
             
             $sql = "UPDATE peminjaman SET 
                         status = 'lunas',
                         qr_code = '$qr_code',
-                        qr_code_generated_at = '$qr_time',
+                        qr_code_generated_at = NOW(),
                         dikonfirmasi_oleh = $adminId,
                         catatan_admin = CONCAT(IFNULL(catatan_admin, ''), '\nPembayaran diverifikasi oleh admin pada ', NOW())
                     WHERE id = $id";
             
             if (mysqli_query($conn, $sql)) {
-                // Ambil data user untuk notifikasi
-                $query_user = "SELECT id_users FROM peminjaman WHERE id = $id";
-                $result = mysqli_query($conn, $query_user);
-                $data = mysqli_fetch_assoc($result);
-                $user_id_notif = $data['id_users'];
-                
-                // Simpan notifikasi
-                $notif_sql = "INSERT INTO notifikasi (id_users, pesan, jenis, link) VALUES (
-                    $user_id_notif,
-                    '✅ Pembayaran Anda telah diverifikasi! Klik link ini untuk melihat QR Code pengambilan alat.',
-                    'verifikasi_berhasil',
-                    'tiket_saya.php?id=$id'
-                )";
-                mysqli_query($conn, $notif_sql);
-                
                 header("Location: dashboard.php?msg=verifikasi_ok#verifikasi");
             } else {
                 header("Location: dashboard.php?msg=verifikasi_err#verifikasi");
@@ -246,40 +188,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi'])) {
         exit();
     }
 
-    // ============================================================
-    // AKSI BARU: TOLAK PEMBAYARAN
-    // ============================================================
+    // Aksi 8: Tolak pembayaran
     if ($_POST['aksi'] === 'tolak_pembayaran') {
         $id = (int)($_POST['id_peminjaman'] ?? 0);
         
         if ($id > 0) {
+            $query_alat = "SELECT id_alat FROM peminjaman WHERE id = $id";
+            $result = mysqli_query($conn, $query_alat);
+            $data = mysqli_fetch_assoc($result);
+            if ($data) {
+                mysqli_query($conn, "UPDATE alat SET stok = stok + 1 WHERE id = " . $data['id_alat']);
+            }
+            
             $sql = "UPDATE peminjaman SET 
                         status = 'dibatalkan',
-                        catatan_admin = CONCAT(IFNULL(catatan_admin, ''), '\nPembayaran ditolak pada ', NOW(), ' - Bukti tidak valid')
+                        catatan_admin = CONCAT(IFNULL(catatan_admin, ''), '\nPembayaran ditolak pada ', NOW())
                     WHERE id = $id";
             
             if (mysqli_query($conn, $sql)) {
-                // Kembalikan stok
-                $query_alat = "SELECT id_alat FROM peminjaman WHERE id = $id";
-                $result = mysqli_query($conn, $query_alat);
-                $data = mysqli_fetch_assoc($result);
-                $id_alat = $data['id_alat'];
-                mysqli_query($conn, "UPDATE alat SET stok = stok + 1 WHERE id = $id_alat");
-                
-                // Notifikasi ke user
-                $query_user = "SELECT id_users FROM peminjaman WHERE id = $id";
-                $result = mysqli_query($conn, $query_user);
-                $data = mysqli_fetch_assoc($result);
-                $user_id_notif = $data['id_users'];
-                
-                $notif_sql = "INSERT INTO notifikasi (id_users, pesan, jenis, link) VALUES (
-                    $user_id_notif,
-                    '❌ Pembayaran Anda ditolak. Silakan upload ulang bukti yang valid.',
-                    'verifikasi_gagal',
-                    'upload_bukti.php?id=$id'
-                )";
-                mysqli_query($conn, $notif_sql);
-                
                 header("Location: dashboard.php?msg=tolak_ok#verifikasi");
             } else {
                 header("Location: dashboard.php?msg=verifikasi_err#verifikasi");
@@ -288,9 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi'])) {
         exit();
     }
 
-    // ============================================================
-    // AKSI BARU: KONFIRMASI PENGAMBILAN ALAT
-    // ============================================================
+    // Aksi 9: Konfirmasi pengambilan alat
     if ($_POST['aksi'] === 'konfirmasi_ambil') {
         $id = (int)($_POST['id_peminjaman'] ?? 0);
         
@@ -303,20 +227,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi'])) {
                     WHERE id = $id";
             
             if (mysqli_query($conn, $sql)) {
-                // Notifikasi ke user
-                $query_user = "SELECT id_users FROM peminjaman WHERE id = $id";
-                $result = mysqli_query($conn, $query_user);
-                $data = mysqli_fetch_assoc($result);
-                $user_id_notif = $data['id_users'];
-                
-                $notif_sql = "INSERT INTO notifikasi (id_users, pesan, jenis, link) VALUES (
-                    $user_id_notif,
-                    '✅ Alat berhasil diambil! Selamat menggunakan.',
-                    'pengambilan_berhasil',
-                    'riwayat.php?tab=transaksi'
-                )";
-                mysqli_query($conn, $notif_sql);
-                
                 header("Location: dashboard.php?msg=ambil_ok#verifikasi");
             } else {
                 header("Location: dashboard.php?msg=verifikasi_err#verifikasi");
@@ -325,30 +235,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi'])) {
         exit();
     }
 
-    // ============================================================
-    // AKSI BARU: KONFIRMASI PENGEMBALIAN ALAT
-    // ============================================================
+    // Aksi 10: Konfirmasi pengembalian alat
     if ($_POST['aksi'] === 'konfirmasi_kembali') {
         $id = (int)($_POST['id_peminjaman'] ?? 0);
-        $kondisi_alat = $_POST['kondisi_alat'] ?? 'baik';
+        $kondisi_alat = mysqli_real_escape_string($conn, $_POST['kondisi_alat'] ?? 'baik');
         $catatan = mysqli_real_escape_string($conn, trim($_POST['catatan_kembali'] ?? ''));
-        $denda_bayar = isset($_POST['denda_bayar']) ? 1 : 0;
         
         if ($id > 0) {
-            // Ambil data peminjaman
             $query = "SELECT * FROM peminjaman WHERE id = $id";
             $result = mysqli_query($conn, $query);
             $data = mysqli_fetch_assoc($result);
             
             if ($data) {
-                // Hitung denda
                 $estimasi = strtotime($data['tanggal_kembali_estimasi']);
                 $sekarang = time();
                 $hari_terlambat = floor(($sekarang - $estimasi) / (60 * 60 * 24));
                 $harga_per_hari = $data['total_bayar'] / $data['durasi'];
                 $denda = $hari_terlambat > 0 ? $hari_terlambat * $harga_per_hari : 0;
-                $status_denda = ($denda > 0 && $denda_bayar) ? 'lunas' : 'belum_bayar';
-                if ($denda == 0) $status_denda = 'tidak_ada';
                 
                 $sql = "UPDATE peminjaman SET 
                             status = 'dikembalikan',
@@ -357,25 +260,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi'])) {
                             kondisi_alat = '$kondisi_alat',
                             catatan_pengembalian = '$catatan',
                             denda = $denda,
-                            status_denda = '$status_denda',
                             dikembalikan_oleh = $adminId,
                             catatan_admin = CONCAT(IFNULL(catatan_admin, ''), '\nAlat dikembalikan pada ', NOW(), ' - Kondisi: $kondisi_alat')
                         WHERE id = $id";
                 
                 if (mysqli_query($conn, $sql)) {
-                    // Kembalikan stok
                     mysqli_query($conn, "UPDATE alat SET stok = stok + 1 WHERE id = " . $data['id_alat']);
-                    
-                    // Notifikasi ke user
-                    $notif_sql = "INSERT INTO notifikasi (id_users, pesan, jenis, link) VALUES (
-                        " . $data['id_users'] . ",
-                        '✅ Alat \"' . '" . $data['nama_alat'] . "' . '\" berhasil dikembalikan!" . 
-                        ($denda > 0 ? ' Denda: Rp ' . number_format($denda, 0, ',', '.') : '') . "',
-                        'pengembalian_berhasil',
-                        'riwayat.php?tab=transaksi'
-                    )";
-                    mysqli_query($conn, $notif_sql);
-                    
                     header("Location: dashboard.php?msg=kembali_ok#verifikasi");
                 } else {
                     header("Location: dashboard.php?msg=verifikasi_err#verifikasi");
@@ -384,6 +274,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aksi'])) {
                 header("Location: dashboard.php?msg=verifikasi_err#verifikasi");
             }
         }
+        exit();
+    }
+
+    // Aksi 11: Set Lunas transaksi
+    if ($_POST['aksi'] === 'set_lunas') {
+        $id = (int)($_POST['id_transaksi'] ?? 0);
+        if ($id > 0) {
+            $st = mysqli_prepare($conn, "UPDATE peminjaman SET status='lunas' WHERE id=?");
+            mysqli_stmt_bind_param($st, 'i', $id);
+            mysqli_stmt_execute($st);
+            mysqli_stmt_close($st);
+        }
+        header("Location: dashboard.php?msg=transaksi_ok#transaksi");
         exit();
     }
 }
@@ -494,22 +397,17 @@ elseif (strpos($hash, '#alat') !== false) $activeSection = 'alat';
 elseif (strpos($hash, '#verifikasi') !== false) $activeSection = 'verifikasi';
 elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>Dashboard Admin — LaduSync</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,800&family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Crop Library -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
 
     <style>
     :root {
@@ -860,77 +758,6 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
     }
     .bukti-preview:hover { transform: scale(1.05); }
 
-    /* ===== CROP STYLES ===== */
-    .crop-container {
-        display: none; position: fixed; inset: 0; z-index: 9999;
-        background: rgba(0,0,0,0.75); align-items: center; justify-content: center;
-        padding: 20px;
-    }
-    .crop-container.active { display: flex; }
-    .crop-box {
-        background: white; border-radius: 16px; max-width: 700px; width: 100%;
-        max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;
-    }
-    .crop-header {
-        padding: 16px 20px; border-bottom: 1px solid rgba(138,115,87,0.12);
-        display: flex; justify-content: space-between; align-items: center;
-        background: #FAFAFA;
-    }
-    .crop-header h3 { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1rem; color: var(--ink); }
-    .crop-header button { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #94A3B8; transition: color 0.2s ease; }
-    .crop-header button:hover { color: #B91C1C; }
-    .crop-body { padding: 20px; overflow-y: auto; flex: 1; }
-    .crop-body img { max-width: 100%; display: block; }
-    .crop-footer {
-        padding: 12px 20px; border-top: 1px solid rgba(138,115,87,0.12);
-        display: flex; justify-content: flex-end; gap: 8px;
-        background: #FAFAFA;
-    }
-    .crop-footer .tbl-btn { padding: 8px 20px; font-size: 0.8rem; }
-
-    .sensor-tile {
-        background: white; border-radius: 14px; padding: 0.8rem;
-        border: 1px solid rgba(138,115,87,0.12); box-shadow: 0 1px 3px rgba(28,43,30,0.05);
-        position: relative; overflow: hidden; transition: transform 0.2s;
-    }
-    .sensor-tile:hover { transform: translateY(-2px); }
-    .sensor-tile::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
-    .tile-normal::before { background: linear-gradient(90deg, #10B981, #34D399); }
-    .tile-rendah::before { background: linear-gradient(90deg, #F97316, #FDBA74); }
-    .tile-tinggi::before { background: linear-gradient(90deg, #3B82F6, #93C5FD); }
-    .tile-kritis::before { background: linear-gradient(90deg, #EF4444, #FCA5A5); }
-    .tile-id { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #94A3B8; margin-bottom: 5px; }
-    .tile-loc { font-size: 0.75rem; font-weight: 600; color: var(--ink); margin-bottom: 8px; line-height: 1.3; }
-    .tile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-    .tile-stat { background: rgba(6,78,59,0.04); border-radius: 7px; padding: 5px 6px; }
-    .tile-stat-val { font-size: 0.8rem; font-weight: 700; color: var(--ink); }
-    .tile-stat-lbl { font-size: 0.6rem; color: #94A3B8; font-weight: 500; margin-top: 1px; }
-
-    .bento-grid {
-        display: grid; grid-template-columns: repeat(2,1fr); gap: 0.75rem; margin-bottom: 1rem;
-    }
-    @media (min-width: 640px) { .bento-grid { gap: 1rem; margin-bottom: 1.5rem; } }
-    @media (min-width: 1024px) { .bento-grid { grid-template-columns: repeat(4,1fr); } }
-
-    /* Verifikasi Grid */
-    .verif-grid {
-        display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;
-    }
-    @media (max-width: 1024px) { .verif-grid { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 768px) { .verif-grid { grid-template-columns: 1fr; } }
-
-    .verif-card {
-        background: white; border-radius: 14px; padding: 1rem;
-        border: 1px solid rgba(138,115,87,0.12);
-        box-shadow: 0 1px 3px rgba(28,43,30,0.05);
-    }
-    .verif-card .badge-count {
-        font-size: 1.8rem; font-weight: 800; color: var(--ink);
-    }
-    .verif-card .badge-label {
-        font-size: 0.7rem; color: #94A3B8;
-    }
-
     footer {
         background: white; border-top: 1px solid rgba(138,115,87,0.12);
         padding: 0.75rem; text-align: center; font-size: 0.65rem; color: #94A3B8;
@@ -949,51 +776,51 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
     .form-grid input:focus, .form-grid textarea:focus, .form-grid select:focus { border-color: var(--sawah); }
     .form-grid textarea { resize: vertical; min-height: 60px; }
 
-    .crop-preview-container { margin-bottom: 12px; display: none; }
-    .crop-preview-container.show { display: block; }
-    .crop-preview-container img {
-        width: 100%; max-height: 250px; object-fit: contain;
-        border-radius: 10px; border: 2px solid #10B981;
-        background: #f8fafc;
-    }
-    .crop-preview-container label { font-size: 0.7rem; font-weight: 600; color: #4B7563; display: block; margin-bottom: 4px; }
-
+    .img-preview-container { margin-bottom: 12px; }
+    .img-preview-container label { font-size: 0.7rem; font-weight: 600; color: #4B7563; display: block; margin-bottom: 4px; }
     .current-image { width: 100%; max-height: 200px; object-fit: cover; border-radius: 10px; border: 2px dashed rgba(138,115,87,0.18); }
 
-    .status-indicator {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        padding: 2px 10px;
-        border-radius: 20px;
-        font-size: 0.65rem;
-        font-weight: 600;
+    .verif-grid {
+        display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;
     }
-    .status-indicator .dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        display: inline-block;
-    }
-    .dot-green { background: #10B981; }
-    .dot-yellow { background: #F59E0B; }
-    .dot-red { background: #EF4444; }
-    .dot-blue { background: #3B82F6; }
-    .dot-purple { background: #8B5CF6; }
-    .bg-green-soft { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
-    .bg-yellow-soft { background: #FFFBEB; color: #92400E; border: 1px solid #FDE68A; }
-    .bg-red-soft { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
-    .bg-blue-soft { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
-    .bg-purple-soft { background: #FDF4FF; color: #7E22CE; border: 1px solid #E9D5FF; }
+    @media (max-width: 1024px) { .verif-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 768px) { .verif-grid { grid-template-columns: 1fr; } }
 
-    .invoice-code {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.7rem;
-        background: #f1f5f9;
-        padding: 2px 8px;
-        border-radius: 4px;
-        color: #475569;
+    .verif-card {
+        background: white; border-radius: 14px; padding: 1rem;
+        border: 1px solid rgba(138,115,87,0.12);
+        box-shadow: 0 1px 3px rgba(28,43,30,0.05);
     }
+    .verif-card .badge-count {
+        font-size: 1.8rem; font-weight: 800; color: var(--ink);
+    }
+    .verif-card .badge-label {
+        font-size: 0.7rem; color: #94A3B8;
+    }
+
+    .bento-grid {
+        display: grid; grid-template-columns: repeat(2,1fr); gap: 0.75rem; margin-bottom: 1rem;
+    }
+    @media (min-width: 640px) { .bento-grid { gap: 1rem; margin-bottom: 1.5rem; } }
+    @media (min-width: 1024px) { .bento-grid { grid-template-columns: repeat(4,1fr); } }
+
+    .sensor-tile {
+        background: white; border-radius: 14px; padding: 0.8rem;
+        border: 1px solid rgba(138,115,87,0.12); box-shadow: 0 1px 3px rgba(28,43,30,0.05);
+        position: relative; overflow: hidden; transition: transform 0.2s;
+    }
+    .sensor-tile:hover { transform: translateY(-2px); }
+    .sensor-tile::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .tile-normal::before { background: linear-gradient(90deg, #10B981, #34D399); }
+    .tile-rendah::before { background: linear-gradient(90deg, #F97316, #FDBA74); }
+    .tile-tinggi::before { background: linear-gradient(90deg, #3B82F6, #93C5FD); }
+    .tile-kritis::before { background: linear-gradient(90deg, #EF4444, #FCA5A5); }
+    .tile-id { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #94A3B8; margin-bottom: 5px; }
+    .tile-loc { font-size: 0.75rem; font-weight: 600; color: var(--ink); margin-bottom: 8px; line-height: 1.3; }
+    .tile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .tile-stat { background: rgba(6,78,59,0.04); border-radius: 7px; padding: 5px 6px; }
+    .tile-stat-val { font-size: 0.8rem; font-weight: 700; color: var(--ink); }
+    .tile-stat-lbl { font-size: 0.6rem; color: #94A3B8; font-weight: 500; margin-top: 1px; }
 
     /* Modal Detail */
     .modal-overlay {
@@ -1027,6 +854,15 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
         transition: color 0.2s;
     }
     .modal-box .close-btn:hover { color: #EF4444; }
+
+    .invoice-code {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.7rem;
+        background: #f1f5f9;
+        padding: 2px 8px;
+        border-radius: 4px;
+        color: #475569;
+    }
     </style>
 </head>
 <body>
@@ -1235,7 +1071,7 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
             'ambil_ok' => ['ok', '✅ Alat berhasil dikonfirmasi pengambilannya! Status berubah menjadi dipinjam.'],
             'kembali_ok' => ['ok', '✅ Alat berhasil dikonfirmasi pengembaliannya!'],
             'transaksi_ok' => ['ok', 'Status transaksi berhasil diperbarui menjadi LUNAS!'],
-            'alat_err' => ['err', 'Gagal menyimpan data alat. Pastikan gambar sudah diupload dan crop.'],
+            'alat_err' => ['err', 'Gagal menyimpan data alat. Periksa kembali data yang diisi.'],
         ];
         if (isset($_GET['msg']) && isset($msgs[$_GET['msg']])) {
             [$type, $text] = $msgs[$_GET['msg']];
@@ -1335,9 +1171,7 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                 </div>
             </div>
 
-            <!-- ============================================================ -->
-            <!-- 1. VERIFIKASI PEMBAYARAN (Menunggu Verifikasi)                -->
-            <!-- ============================================================ -->
+            <!-- 1. VERIFIKASI PEMBAYARAN -->
             <div class="section-card">
                 <div class="sc-head">
                     <div>
@@ -1416,9 +1250,7 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                 <?php endif; ?>
             </div>
 
-            <!-- ============================================================ -->
-            <!-- 2. KONFIRMASI PENGAMBILAN ALAT (Status = Lunas)              -->
-            <!-- ============================================================ -->
+            <!-- 2. KONFIRMASI PENGAMBILAN ALAT -->
             <div class="section-card">
                 <div class="sc-head">
                     <div>
@@ -1486,9 +1318,7 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                 <?php endif; ?>
             </div>
 
-            <!-- ============================================================ -->
-            <!-- 3. KONFIRMASI PENGEMBALIAN ALAT (Status = Dipinjam)          -->
-            <!-- ============================================================ -->
+            <!-- 3. KONFIRMASI PENGEMBALIAN ALAT -->
             <div class="section-card">
                 <div class="sc-head">
                     <div>
@@ -1516,10 +1346,15 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                         <tbody>
                         <?php mysqli_data_seek($kembali_data, 0); while ($row = mysqli_fetch_assoc($kembali_data)):
                             $is_terlambat = strtotime($row['tanggal_kembali_estimasi']) < time();
-                            $estimasi = strtotime($row['tanggal_kembali_estimasi']);
-                            $hari_terlambat = floor((time() - $estimasi) / (60 * 60 * 24));
-                            $harga_per_hari = $row['total_bayar'] / $row['durasi'];
-                            $denda = $hari_terlambat > 0 ? $hari_terlambat * $harga_per_hari : 0;
+                            $hari_terlambat = 0;
+                            $denda = 0;
+                            if ($is_terlambat) {
+                                $estimasi = strtotime($row['tanggal_kembali_estimasi']);
+                                $sekarang = time();
+                                $hari_terlambat = floor(($sekarang - $estimasi) / (60 * 60 * 24));
+                                $harga_per_hari = $row['total_bayar'] / $row['durasi'];
+                                $denda = $hari_terlambat * $harga_per_hari;
+                            }
                         ?>
                         <tr style="<?= $is_terlambat ? 'background:#FEF2F2;' : '' ?>">
                             <td data-label="Invoice"><span class="invoice-code"><?= $row['no_invoice'] ?></span></td>
@@ -1546,7 +1381,7 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                                 <?php endif; ?>
                             </td>
                             <td data-label="Aksi">
-                                <button onclick="openKembaliModal(<?= $row['id'] ?>, '<?= addslashes($row['nama_alat']) ?>', <?= $denda ?>, <?= $hari_terlambat > 0 ? $hari_terlambat : 0 ?>, <?= $row['total_bayar'] ?>, <?= $row['durasi'] ?>)" 
+                                <button onclick="openKembaliModal(<?= $row['id'] ?>, '<?= addslashes($row['nama_alat']) ?>', <?= $denda ?>, <?= $hari_terlambat ?>, <?= $row['total_bayar'] ?>, <?= $row['durasi'] ?>)" 
                                         class="tbl-btn tbl-btn-purple" style="padding:5px 12px;cursor:pointer;">
                                     📥 Konfirmasi Kembali
                                 </button>
@@ -1696,25 +1531,24 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                         <?php if ($isEdit): ?>
                             <div style="font-weight:600;color:#92400E;margin-bottom:0.5rem;">✏️ Mode Edit: <span style="font-weight:700;"><?= htmlspecialchars($edit_alat['nama_alat']) ?></span></div>
                         <?php endif; ?>
-                        <form method="POST" id="formAlat" enctype="multipart/form-data">
+                        <form method="POST" id="formAlat">
                             <input type="hidden" name="aksi" value="<?= $isEdit ? 'edit_alat' : 'tambah_alat' ?>">
                             <?php if ($isEdit): ?>
                             <input type="hidden" name="id_alat" value="<?= $edit_alat['id'] ?>">
                             <?php endif; ?>
-                            <input type="hidden" name="gambar_cropped" id="gambarCropped" value="<?= $isEdit ? htmlspecialchars($edit_alat['gambar'] ?? '') : '' ?>">
 
                             <div class="form-grid">
                                 <div>
                                     <label>Nama Alat</label>
-                                    <input type="text" name="nama_alat" id="namaAlat" placeholder="Contoh: Traktor Modern" required value="<?= $isEdit ? htmlspecialchars($edit_alat['nama_alat']) : '' ?>">
+                                    <input type="text" name="nama_alat" placeholder="Contoh: Traktor Modern" required value="<?= $isEdit ? htmlspecialchars($edit_alat['nama_alat']) : '' ?>">
                                 </div>
                                 <div>
                                     <label>Harga Sewa / Hari</label>
-                                    <input type="number" name="harga" id="hargaAlat" placeholder="500000" step="0.01" required value="<?= $isEdit ? $edit_alat['harga'] : '' ?>">
+                                    <input type="number" name="harga" placeholder="500000" step="0.01" required value="<?= $isEdit ? $edit_alat['harga'] : '' ?>">
                                 </div>
                                 <div>
                                     <label>Stok</label>
-                                    <input type="number" name="stok" id="stokAlat" placeholder="5" required value="<?= $isEdit ? $edit_alat['stok'] : '' ?>">
+                                    <input type="number" name="stok" placeholder="5" required value="<?= $isEdit ? $edit_alat['stok'] : '' ?>">
                                 </div>
                             </div>
 
@@ -1723,17 +1557,14 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                                 <textarea name="deskripsi" rows="2" placeholder="Deskripsi alat..." style="width:100%;padding:8px 12px;border:1px solid rgba(138,115,87,0.18);border-radius:10px;font-size:0.8rem;outline:none;font-family:inherit;background:white;"><?= $isEdit ? htmlspecialchars($edit_alat['deskripsi']) : '' ?></textarea>
                             </div>
 
-                            <!-- UPLOAD GAMBAR -->
+                            <!-- URL GAMBAR -->
                             <div style="margin-bottom:12px;">
-                                <label style="font-size:0.7rem;font-weight:600;color:#4B7563;display:block;margin-bottom:4px;">Upload Gambar</label>
-                                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-                                    <input type="file" id="fileInput" accept="image/*" style="flex:1;padding:8px;border:1px solid rgba(138,115,87,0.18);border-radius:10px;font-size:0.8rem;background:white;">
-                                    <button type="button" class="tbl-btn tbl-btn-blue" onclick="uploadImage()" style="padding:8px 16px;font-size:0.78rem;">📤 Upload & Crop</button>
-                                </div>
-                                <div style="font-size:0.6rem;color:#94A3B8;margin-top:4px;">Format: JPG, PNG, GIF. Maks: 2MB</div>
+                                <label style="font-size:0.7rem;font-weight:600;color:#4B7563;display:block;margin-bottom:4px;">URL Gambar</label>
+                                <input type="text" name="gambar_url" id="gambarUrl" placeholder="https://images.unsplash.com/photo-..." style="width:100%;padding:8px 12px;border:1px solid rgba(138,115,87,0.18);border-radius:10px;font-size:0.8rem;outline:none;font-family:inherit;background:white;" value="<?= $isEdit ? htmlspecialchars($edit_alat['gambar'] ?? '') : '' ?>">
+                                <div style="font-size:0.6rem;color:#94A3B8;margin-top:4px;">Masukkan URL gambar dari internet (contoh: images.unsplash.com)</div>
                             </div>
 
-                            <!-- PREVIEW GAMBAR SAAT INI -->
+                            <!-- PREVIEW GAMBAR -->
                             <?php if ($isEdit && !empty($edit_alat['gambar'])): ?>
                             <div style="margin-bottom:12px;">
                                 <label style="font-size:0.7rem;font-weight:600;color:#4B7563;display:block;margin-bottom:4px;">Preview Gambar Saat Ini</label>
@@ -1741,10 +1572,9 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                             </div>
                             <?php endif; ?>
 
-                            <!-- PREVIEW HASIL CROP -->
-                            <div id="cropPreviewContainer" class="crop-preview-container">
-                                <label>✅ Hasil Crop:</label>
-                                <img id="cropPreviewImage" src="" alt="Hasil crop">
+                            <div id="previewUrl" style="margin-bottom:12px;display:none;">
+                                <label style="font-size:0.7rem;font-weight:600;color:#4B7563;display:block;margin-bottom:4px;">Preview Gambar:</label>
+                                <img id="previewUrlImage" src="" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0;">
                             </div>
 
                             <div style="display:flex;gap:8px;">
@@ -1768,7 +1598,7 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                             <?php mysqli_data_seek($alat, 0); while ($row = mysqli_fetch_assoc($alat)): ?>
                             <tr>
                                 <td data-label="Foto">
-                                    <?php if (!empty($row['gambar']) && file_exists(__DIR__ . '/' . $row['gambar'])): ?>
+                                    <?php if (!empty($row['gambar'])): ?>
                                         <img src="<?= htmlspecialchars($row['gambar']) ?>" class="img-preview" onerror="this.src='https://placehold.co/60x45?text=No+Img'">
                                     <?php else: ?>
                                         <img src="https://placehold.co/60x45?text=No+Img" class="img-preview">
@@ -1942,23 +1772,6 @@ elseif (strpos($hash, '#transaksi') !== false) $activeSection = 'transaksi';
                 <button type="button" class="tbl-btn" style="padding:8px 20px;font-size:0.8rem;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;" onclick="closeKembaliModal()">Batal</button>
             </div>
         </form>
-    </div>
-</div>
-
-<!-- ===== CROP MODAL ===== -->
-<div class="crop-container" id="cropModal">
-    <div class="crop-box">
-        <div class="crop-header">
-            <h3>✂️ Crop Gambar</h3>
-            <button onclick="closeCrop()">✕</button>
-        </div>
-        <div class="crop-body">
-            <img id="cropImage" src="" alt="Gambar untuk crop">
-        </div>
-        <div class="crop-footer">
-            <button class="tbl-btn" style="background:#f1f5f9;color:#475569;" onclick="closeCrop()">Batal</button>
-            <button class="tbl-btn tbl-btn-green" onclick="saveCrop()">✅ Terapkan Crop</button>
-        </div>
     </div>
 </div>
 
@@ -2166,7 +1979,6 @@ function openKembaliModal(id, namaAlat, denda, hariTerlambat, totalBayar, durasi
     document.getElementById('kembaliId').value = id;
     document.getElementById('kembaliAlat').textContent = namaAlat;
     
-    // Estimasi kembali
     const estimasi = new Date();
     estimasi.setDate(estimasi.getDate() + durasi);
     document.getElementById('kembaliEstimasi').textContent = estimasi.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -2188,127 +2000,33 @@ function closeKembaliModal() {
     document.body.style.overflow = '';
 }
 
-// Tutup modal dengan ESC
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeKembaliModal();
-        closeCrop();
     }
 });
 
-// ===== CROP FUNCTION =====
-let cropper = null;
-
-function uploadImage() {
-    const fileInput = document.getElementById('fileInput');
-    const file = fileInput.files[0];
-    if (!file) {
-        alert('Pilih file gambar terlebih dahulu!');
-        return;
+// ===== PREVIEW URL GAMBAR =====
+document.addEventListener('DOMContentLoaded', function() {
+    const urlInput = document.getElementById('gambarUrl');
+    const previewDiv = document.getElementById('previewUrl');
+    const previewImg = document.getElementById('previewUrlImage');
+    
+    if (urlInput) {
+        urlInput.addEventListener('input', function() {
+            const url = this.value.trim();
+            if (url) {
+                previewDiv.style.display = 'block';
+                previewImg.src = url;
+                previewImg.onerror = function() {
+                    this.src = 'https://placehold.co/600x400/e2e8f0/64748b?text=Invalid+URL';
+                };
+            } else {
+                previewDiv.style.display = 'none';
+            }
+        });
     }
-    if (file.size > 2 * 1024 * 1024) {
-        alert('Ukuran file maksimal 2MB!');
-        return;
-    }
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const img = document.getElementById('cropImage');
-        img.src = e.target.result;
-        document.getElementById('cropModal').classList.add('active');
-        document.body.style.overflow = 'hidden';
-        
-        if (cropper) { 
-            cropper.destroy(); 
-            cropper = null; 
-        }
-        
-        img.onload = function() {
-            setTimeout(function() {
-                cropper = new Cropper(img, {
-                    aspectRatio: 4 / 3,
-                    viewMode: 1,
-                    autoCropArea: 0.8,
-                    movable: true,
-                    zoomable: true,
-                    rotatable: false,
-                    scalable: false,
-                    guides: true,
-                    background: false,
-                    cropBoxResizable: true,
-                    dragMode: 'move'
-                });
-            }, 100);
-        };
-        
-        if (img.complete) {
-            setTimeout(function() {
-                cropper = new Cropper(img, {
-                    aspectRatio: 4 / 3,
-                    viewMode: 1,
-                    autoCropArea: 0.8,
-                    movable: true,
-                    zoomable: true,
-                    rotatable: false,
-                    scalable: false,
-                    guides: true,
-                    background: false,
-                    cropBoxResizable: true,
-                    dragMode: 'move'
-                });
-            }, 100);
-        }
-    };
-    reader.readAsDataURL(file);
-}
-
-function closeCrop() {
-    document.getElementById('cropModal').classList.remove('active');
-    document.body.style.overflow = '';
-    if (cropper) { 
-        cropper.destroy(); 
-        cropper = null; 
-    }
-    document.getElementById('fileInput').value = '';
-}
-
-function saveCrop() {
-    if (!cropper) {
-        alert('Silakan crop gambar terlebih dahulu!');
-        return;
-    }
-    
-    const canvas = cropper.getCroppedCanvas({
-        width: 800,
-        height: 600,
-        imageSmoothingEnabled: true,
-        imageSmoothingQuality: 'high'
-    });
-    
-    if (!canvas) {
-        alert('Gagal melakukan crop. Silakan coba lagi.');
-        return;
-    }
-    
-    const croppedImage = canvas.toDataURL('image/jpeg', 0.9);
-    document.getElementById('gambarCropped').value = croppedImage;
-    
-    const previewContainer = document.getElementById('cropPreviewContainer');
-    const previewImage = document.getElementById('cropPreviewImage');
-    previewImage.src = croppedImage;
-    previewContainer.classList.add('show');
-    
-    closeCrop();
-    
-    const flashDiv = document.createElement('div');
-    flashDiv.className = 'flash flash-ok';
-    flashDiv.innerHTML = '✅ Gambar berhasil di-crop! Silakan submit form untuk menyimpan.';
-    const formContainer = document.querySelector('#formAlat').parentElement;
-    const existingFlash = formContainer.querySelector('.flash');
-    if (existingFlash) existingFlash.remove();
-    formContainer.insertBefore(flashDiv, document.querySelector('#formAlat'));
-    setTimeout(() => { flashDiv.remove(); }, 5000);
-}
+});
 </script>
 
 </body>
