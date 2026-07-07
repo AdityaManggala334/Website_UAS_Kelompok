@@ -9,7 +9,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
 require_once __DIR__ . '/koneksi.php';
-require_once __DIR__ . '/auth_check.php';
+require_once __DIR__ . '/auth_helper.php';
 
 // Cek apakah user login
 if (!$is_logged_in) {
