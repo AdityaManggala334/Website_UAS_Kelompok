@@ -1,43 +1,33 @@
 <?php
-// KONFIGURASI AWAL DAN INISIALISASI
-ob_start();  
-error_reporting(E_ALL);  
+// ============================================================
+// PETA SENSOR - LADUSYNC
+// ============================================================
+
+ob_start();
+error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
-// Memanggil konfigurasi sesi global Ladusync dari subfolder api
-require_once __DIR__ . '/koneksi.php';  
+require_once __DIR__ . '/koneksi.php';
+require_once __DIR__ . '/auth_helper.php';
 
-if (!$conn) {
-    die("Koneksi database gagal: " . mysqli_connect_error());
+// Cek login
+if (!$is_logged_in) {
+    header("Location: login.php");
+    exit();
 }
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-$is_logged_in = isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0;
-
-if ($is_logged_in) {
-    $namaDepan   = $_SESSION['nama_depan'] ?? 'User';
-    $namaBelakang = $_SESSION['nama_belakang'] ?? '';
-    $namaLengkap = trim($namaDepan . ' ' . $namaBelakang) ?: $namaDepan;
-    $role        = $_SESSION['role'] ?? 'guest';
-} else {
-    $namaDepan   = 'Guest';
-    $namaLengkap = 'Pengunjung Umum';
-    $role        = 'guest';
-}
-
-$pesan_laporan = $_SESSION['pesan_laporan'] ?? '';
-$pesan_warna   = $_SESSION['pesan_warna'] ?? '';
-unset($_SESSION['pesan_laporan'], $_SESSION['pesan_warna']);
+// Ambil data user dari auth_helper
+$userData = getCurrentUser();
+$user_id = $userData['id'];
+$username = $userData['username'];
+$namaDepan = $userData['nama_depan'] ?? $username;
+$role = $userData['role'] ?? 'guest';
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">                    
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">  
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>Peta Sensor — Ladusync</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -89,10 +79,10 @@ unset($_SESSION['pesan_laporan'], $_SESSION['pesan_warna']);
         font-weight: 700; white-space: nowrap; font-family: 'JetBrains Mono', monospace;
         letter-spacing: 0.02em;
     }
-    .sp-normal { background:#EEF4EA; color:#2F5233; border:1px solid #C9DABF; }
-    .sp-rendah { background:#FBF1E1; color:#8A5A1E; border:1px solid #E9CE9E; }
-    .sp-tinggi { background:#EAF1F6; color:#2C567D; border:1px solid #BDD4E4; }
-    .sp-kritis { background:#FBEAE7; color:#8A2E1F; border:1px solid #E7B9AE; }
+    .sp-normal { background:#D1FAE5; color:#065F46; border:1px solid #6EE7B7; }
+    .sp-rendah { background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; }
+    .sp-tinggi { background:#DBEAFE; color:#1E40AF; border:1px solid #93C5FD; }
+    .sp-kritis { background:#FEE2E2; color:#991B1B; border:1px solid #FCA5A5; }
 
     .profil-wrap:hover .profil-dropdown { display: block; }
     .profil-dropdown {
@@ -289,7 +279,7 @@ unset($_SESSION['pesan_laporan'], $_SESSION['pesan_warna']);
     .sensor-ring { animation: sensorPulse 2.5s ease-in-out infinite; }
 
     .sensor-click { cursor: pointer; transition: transform .2s; }
-    .sensor-click:hover { transform: scale(1.15); }
+    .sensor-click:hover { transform: scale(1.12); }
 
     .kpi-row { display: grid; grid-template-columns: repeat(2,1fr); gap: 0.75rem; margin-bottom: 1rem; }
     @media (min-width: 640px) { .kpi-row { grid-template-columns: repeat(4,1fr); gap: 1rem; } }
@@ -774,15 +764,6 @@ unset($_SESSION['pesan_laporan'], $_SESSION['pesan_warna']);
       <span class="nav-text">Hasil Panen</span>
     </a>
 
-    <div class="sidebar-section-label">Edukasi</div>
-    <a href="api/konten_edukasi.php" class="nav-link">
-      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M4 6h16M4 12h16M4 18h10"/>
-        <rect x="2" y="2" width="20" height="20" rx="2"/>
-      </svg>
-      <span class="nav-text">Konten Edukasi</span>
-    </a>
-
     <?php if ($is_logged_in && $role === 'administrator'): ?>
     <div class="sidebar-section-label">Administrasi</div>
     <a href="dashboard.php" class="nav-link nav-link-admin">
@@ -851,7 +832,7 @@ unset($_SESSION['pesan_laporan'], $_SESSION['pesan_warna']);
 
         <div class="profil-dropdown">
           <div class="px-4 py-3 border-b" style="background:linear-gradient(135deg,#F5F1E5,#ECE5D3);border-color:rgba(138,115,87,0.18);">
-            <div class="font-bold text-sm font-display" style="color:var(--sawah);"><?= htmlspecialchars($namaLengkap) ?></div>
+            <div class="font-bold text-sm font-display" style="color:var(--sawah);"><?= htmlspecialchars($namaDepan) ?></div>
             <div class="text-xs text-slate-500 mt-0.5 capitalize"><?= str_replace('_', ' ', $role) ?></div>
           </div>
           <?php if ($is_logged_in): ?>
@@ -886,19 +867,19 @@ unset($_SESSION['pesan_laporan'], $_SESSION['pesan_warna']);
     <!-- KPI ROW -->
     <div class="kpi-row">
         <div class="kpi-chip">
-            <div class="kpi-dot" style="background:#2F5233;"></div>
+            <div class="kpi-dot" style="background:#10B981;"></div>
             <div><div class="kpi-num" id="cnt-normal">0</div><div class="kpi-lbl">Normal</div></div>
         </div>
         <div class="kpi-chip">
-            <div class="kpi-dot" style="background:#B9843A;"></div>
+            <div class="kpi-dot" style="background:#F59E0B;"></div>
             <div><div class="kpi-num" id="cnt-rendah">0</div><div class="kpi-lbl">Rendah</div></div>
         </div>
         <div class="kpi-chip">
-            <div class="kpi-dot" style="background:#35648C;"></div>
+            <div class="kpi-dot" style="background:#3B82F6;"></div>
             <div><div class="kpi-num" id="cnt-tinggi">0</div><div class="kpi-lbl">Tinggi</div></div>
         </div>
         <div class="kpi-chip">
-            <div class="kpi-dot" style="background:#9C4130;"></div>
+            <div class="kpi-dot" style="background:#EF4444;"></div>
             <div><div class="kpi-num" id="cnt-kritis">0</div><div class="kpi-lbl">Kritis</div></div>
         </div>
     </div>
@@ -913,11 +894,14 @@ unset($_SESSION['pesan_laporan'], $_SESSION['pesan_warna']);
                 <span class="panel-sub" id="waktu-peta">--:--:--</span>
             </div>
             <div class="map-wrap">
+                <!-- GAMBAR PETA SAWAH -->
                 <img class="aerial" src="https://imgur.com/dmDQGaw.png" alt="Peta Irigasi Sawah" onerror="this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%231a2e1a%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%22150%22%20text-anchor%3D%22middle%22%20fill%3D%22%2334D399%22%20font-size%3D%2214%22%3EPeta%20Irigasi%3C%2Ftext%3E%3C%2Fsvg%3E'">
                 <div class="map-overlay"></div>
 
+                <!-- SVG OVERLAY SENSOR (UKURAN KECIL + BULAT) -->
                 <svg class="sensor-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
                     <defs>
+                        <!-- Efek glow untuk titik sensor -->
                         <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
                             <feGaussianBlur stdDeviation="1.5" result="blur"/>
                             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
@@ -926,57 +910,57 @@ unset($_SESSION['pesan_laporan'], $_SESSION['pesan_warna']);
 
                     <!-- Sensor SNS-01 -->
                     <g class="sensor-click" onclick="pilihSensor('SNS-01')">
-                        <circle id="ring-SNS-01" cx="14" cy="10" r="4" fill="none" stroke="#2F5233" stroke-width="1" opacity=".5" class="sensor-ring"/>
-                        <circle id="dot-SNS-01" cx="14" cy="10" r="3.5" fill="#2F5233" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
+                        <circle id="ring-SNS-01" cx="14" cy="10" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
+                        <circle id="dot-SNS-01" cx="14" cy="10" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
                         <text x="14" y="10.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S1</text>
                     </g>
 
                     <!-- Sensor SNS-02 -->
                     <g class="sensor-click" onclick="pilihSensor('SNS-02')">
-                        <circle id="ring-SNS-02" cx="26" cy="10" r="4" fill="none" stroke="#2F5233" stroke-width="1" opacity=".5" class="sensor-ring"/>
-                        <circle id="dot-SNS-02" cx="26" cy="10" r="3.5" fill="#2F5233" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
+                        <circle id="ring-SNS-02" cx="26" cy="10" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
+                        <circle id="dot-SNS-02" cx="26" cy="10" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
                         <text x="26" y="10.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S2</text>
                     </g>
 
-                    <!-- Sensor SNS-03 (Rendah) -->
+                    <!-- Sensor SNS-03 - Rendah -->
                     <g class="sensor-click" onclick="pilihSensor('SNS-03')">
-                        <circle id="ring-SNS-03" cx="47" cy="10" r="4" fill="none" stroke="#B9843A" stroke-width="1" opacity=".5" class="sensor-ring"/>
-                        <circle id="dot-SNS-03" cx="47" cy="10" r="3.5" fill="#B9843A" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
+                        <circle id="ring-SNS-03" cx="47" cy="10" r="4" fill="none" stroke="#F59E0B" stroke-width="1" opacity=".5" class="sensor-ring"/>
+                        <circle id="dot-SNS-03" cx="47" cy="10" r="3.5" fill="#F59E0B" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
                         <text x="47" y="10.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S3</text>
                     </g>
 
-                    <!-- Sensor SNS-04 (Tinggi) -->
+                    <!-- Sensor SNS-04 - Tinggi -->
                     <g class="sensor-click" onclick="pilihSensor('SNS-04')">
-                        <circle id="ring-SNS-04" cx="69" cy="10" r="4" fill="none" stroke="#35648C" stroke-width="1" opacity=".5" class="sensor-ring"/>
-                        <circle id="dot-SNS-04" cx="69" cy="10" r="3.5" fill="#35648C" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
+                        <circle id="ring-SNS-04" cx="69" cy="10" r="4" fill="none" stroke="#3B82F6" stroke-width="1" opacity=".5" class="sensor-ring"/>
+                        <circle id="dot-SNS-04" cx="69" cy="10" r="3.5" fill="#3B82F6" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
                         <text x="69" y="10.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S4</text>
                     </g>
 
                     <!-- Sensor SNS-05 -->
                     <g class="sensor-click" onclick="pilihSensor('SNS-05')">
-                        <circle id="ring-SNS-05" cx="15" cy="55" r="4" fill="none" stroke="#2F5233" stroke-width="1" opacity=".5" class="sensor-ring"/>
-                        <circle id="dot-SNS-05" cx="15" cy="55" r="3.5" fill="#2F5233" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
+                        <circle id="ring-SNS-05" cx="15" cy="55" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
+                        <circle id="dot-SNS-05" cx="15" cy="55" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
                         <text x="15" y="55.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S5</text>
                     </g>
 
-                    <!-- Sensor SNS-06 (Kritis) -->
+                    <!-- Sensor SNS-06 - Kritis -->
                     <g class="sensor-click" onclick="pilihSensor('SNS-06')">
-                        <circle id="ring-SNS-06" cx="46" cy="50" r="4" fill="none" stroke="#9C4130" stroke-width="1" opacity=".5" class="sensor-ring"/>
-                        <circle id="dot-SNS-06" cx="46" cy="50" r="3.5" fill="#9C4130" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
+                        <circle id="ring-SNS-06" cx="46" cy="50" r="4" fill="none" stroke="#EF4444" stroke-width="1" opacity=".5" class="sensor-ring"/>
+                        <circle id="dot-SNS-06" cx="46" cy="50" r="3.5" fill="#EF4444" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
                         <text x="46" y="50.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S6</text>
                     </g>
 
                     <!-- Sensor SNS-07 -->
                     <g class="sensor-click" onclick="pilihSensor('SNS-07')">
-                        <circle id="ring-SNS-07" cx="68" cy="50" r="4" fill="none" stroke="#2F5233" stroke-width="1" opacity=".5" class="sensor-ring"/>
-                        <circle id="dot-SNS-07" cx="68" cy="50" r="3.5" fill="#2F5233" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
+                        <circle id="ring-SNS-07" cx="68" cy="50" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
+                        <circle id="dot-SNS-07" cx="68" cy="50" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
                         <text x="68" y="50.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S7</text>
                     </g>
 
                     <!-- Sensor SNS-08 -->
                     <g class="sensor-click" onclick="pilihSensor('SNS-08')">
-                        <circle id="ring-SNS-08" cx="85" cy="80" r="4" fill="none" stroke="#2F5233" stroke-width="1" opacity=".5" class="sensor-ring"/>
-                        <circle id="dot-SNS-08" cx="85" cy="80" r="3.5" fill="#2F5233" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
+                        <circle id="ring-SNS-08" cx="85" cy="80" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
+                        <circle id="dot-SNS-08" cx="85" cy="80" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
                         <text x="85" y="80.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S8</text>
                     </g>
                 </svg>
@@ -984,10 +968,10 @@ unset($_SESSION['pesan_laporan'], $_SESSION['pesan_warna']);
 
             <!-- LEGEND -->
             <div class="legend-wrap">
-                <div class="legend-item"><div class="legend-dot" style="background:#2F5233;"></div>Normal</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#B9843A;"></div>Rendah</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#35648C;"></div>Tinggi</div>
-                <div class="legend-item"><div class="legend-dot" style="background:#9C4130;"></div>Kritis</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#10B981;"></div>Normal</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#F59E0B;"></div>Rendah</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#3B82F6;"></div>Tinggi</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#EF4444;"></div>Kritis</div>
             </div>
         </div>
 
@@ -1052,8 +1036,6 @@ unset($_SESSION['pesan_laporan'], $_SESSION['pesan_warna']);
                     </a>
                 </div>
             </div>
-
-
 
             <!-- Kolom 3: Kontak -->
             <div class="footer-col">
@@ -1284,20 +1266,21 @@ var dataSensor = [
     { id:"SNS-08", lokasi:"Embung Ngulon",         debit:7.8,  tma:32, suhu:27.4, lembap:66, status:"normal" },
 ];
 
+// WARNA CERAH untuk setiap status
 var WARNA = { 
-    normal: "#2F5233", 
-    rendah: "#B9843A", 
-    tinggi: "#35648C", 
-    kritis: "#9C4130" 
+    normal: "#10B981",   // Hijau Cerah
+    rendah: "#F59E0B",   // Kuning Cerah
+    tinggi: "#3B82F6",   // Biru Cerah
+    kritis: "#EF4444"    // Merah Cerah
 };
 var LABEL = { normal:"Normal", rendah:"Rendah", tinggi:"Tinggi", kritis:"Kritis" };
 
 function pillStyle(status) {
     var s = {
-        normal: "background:#EEF4EA;color:#2F5233;border:1px solid #C9DABF;",
-        rendah: "background:#FBF1E1;color:#8A5A1E;border:1px solid #E9CE9E;",
-        tinggi: "background:#EAF1F6;color:#2C567D;border:1px solid #BDD4E4;",
-        kritis: "background:#FBEAE7;color:#8A2E1F;border:1px solid #E7B9AE;"
+        normal: "background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;",
+        rendah: "background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;",
+        tinggi: "background:#DBEAFE;color:#1E40AF;border:1px solid #93C5FD;",
+        kritis: "background:#FEE2E2;color:#991B1B;border:1px solid #FCA5A5;"
     };
     return s[status] || s.normal;
 }
