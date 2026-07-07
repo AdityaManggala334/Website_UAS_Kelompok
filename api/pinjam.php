@@ -12,11 +12,16 @@ ini_set('display_errors', '1');
 require_once __DIR__ . '/koneksi.php';
 require_once __DIR__ . '/auth_helper.php';
 
-// Cek login
+// Cek login - gunakan fungsi dari auth_helper
 if (!isLoggedIn()) {
     header("Location: login.php");
     exit();
 }
+
+// Ambil user data
+$userData = getCurrentUser();
+$user_id = $userData['id'];
+$username = $userData['username'];
 
 $id_alat = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
@@ -59,17 +64,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (empty($metode)) {
         $error = "Pilih metode pembayaran";
     } else {
+        // Hitung total
+        $total = $durasi * $data['harga'];
+        
         // Simpan ke session untuk pembayaran
         $_SESSION['sewa_temp'] = [
             'id_alat' => $id_alat,
             'nama_alat' => $data['nama_alat'],
             'harga' => $data['harga'],
             'durasi' => $durasi,
-            'total' => $durasi * $data['harga'],
+            'total' => $total,
             'metode' => $metode,
-            'stok' => $data['stok']
+            'stok' => $data['stok'],
+            'user_id' => $user_id,
+            'username' => $username
         ];
         
+        // DEBUG: Log session
+        error_log("=== PINJAM.PHP: SESSION SEWA_TEMP DISIMPAN ===");
+        error_log(print_r($_SESSION['sewa_temp'], true));
+        
+        // Redirect ke pembayaran
         header("Location: pembayaran.php");
         exit();
     }
@@ -588,7 +603,7 @@ $metode_list = [
     </div>
 
     <!-- Form -->
-    <form method="POST" id="sewaForm">
+    <form method="POST" id="sewaForm" action="">
         <!-- Durasi -->
         <div class="form-group">
             <label>
@@ -667,9 +682,9 @@ $metode_list = [
             <span class="value" id="totalDisplay">Rp <?= number_format($data['harga'], 0, ',', '.') ?></span>
         </div>
 
-                <!-- Buttons -->
+        <!-- Buttons -->
         <div class="btn-group">
-            <button type="submit" class="btn btn-primary">Lanjut ke Pembayaran</button>
+            <button type="submit" class="btn btn-primary">🛒 Lanjut ke Pembayaran</button>
             <a href="daftar_alat.php" class="btn btn-secondary">Batal</a>
         </div>
     </form>
