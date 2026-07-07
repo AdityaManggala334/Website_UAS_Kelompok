@@ -671,7 +671,7 @@ $metode_list = [
             <button type="submit" class="btn btn-primary">
                 🛒 Lanjut ke Pembayaran
             </button>
-            <a href="pembayaran.php" class="btn btn-secondary">Batal</a>
+            <a href="daftar_alat.php" class="btn btn-secondary">Batal</a>
         </div>
     </form>
 
