@@ -1,7 +1,7 @@
 <?php
 // api/auth_helper.php
 // ======================================================
-// AUTHENTICATION HELPER - LADUSYNC (DENGAN JWT)
+// AUTHENTICATION HELPER - LADUSYNC (KONSOLIDASI)
 // ======================================================
 
 ob_start();
@@ -38,7 +38,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // ============================================================
-// CEK LOGIN: JWT > SESSION > COOKIE (sm_uid)
+// INISIALISASI VARIABEL DEFAULT
 // ============================================================
 
 $is_logged_in = false;
@@ -49,6 +49,10 @@ $namaBelakang = '';
 $namaLengkap = 'Pengunjung Umum';
 $email = '';
 $role = 'guest';
+
+// ============================================================
+// CEK LOGIN: JWT > SESSION > COOKIE (sm_uid)
+// ============================================================
 
 // === 1. CEK JWT DARI COOKIE (Prioritas Utama) ===
 if (isset($_COOKIE['auth_token'])) {
@@ -61,7 +65,7 @@ if (isset($_COOKIE['auth_token'])) {
         $is_logged_in = true;
         $namaLengkap = $namaDepan;
         
-        // Sinkronkan ke session (fallback)
+        // Sinkronkan ke session
         $_SESSION['user_id'] = $user_id;
         $_SESSION['username'] = $username;
         $_SESSION['role'] = $role;
@@ -69,7 +73,7 @@ if (isset($_COOKIE['auth_token'])) {
     }
 }
 
-// === 2. FALLBACK: CEK SESSION (jika JWT tidak ada) ===
+// === 2. FALLBACK: CEK SESSION ===
 if (!$is_logged_in && isset($_SESSION['user_id']) && $_SESSION['user_id'] > 0) {
     $user_id = (int)$_SESSION['user_id'];
     $username = $_SESSION['username'] ?? 'User';
@@ -110,20 +114,18 @@ if (!$is_logged_in && isset($_COOKIE['sm_uid'])) {
 }
 
 // ============================================================
-// EKSPOR VARIABEL GLOBAL (untuk file lain)
+// EKSPOR VARIABEL GLOBAL (untuk semua file)
 // ============================================================
 
-// Pastikan variabel tersedia di global scope
 $GLOBALS['user_id'] = $user_id;
 $GLOBALS['username'] = $username;
-$GLOBALS['role'] = $role;
-$GLOBALS['is_logged_in'] = $is_logged_in;
 $GLOBALS['namaDepan'] = $namaDepan;
 $GLOBALS['namaLengkap'] = $namaLengkap;
-$GLOBALS['email'] = $email;
+$GLOBALS['role'] = $role;
+$GLOBALS['is_logged_in'] = $is_logged_in;
 
 // ============================================================
-// FUNGSI HELPER
+// FUNGSI HELPER (untuk digunakan di semua file)
 // ============================================================
 
 /**
@@ -132,37 +134,6 @@ $GLOBALS['email'] = $email;
 function isLoggedIn() {
     global $is_logged_in;
     return isset($is_logged_in) && $is_logged_in === true;
-}
-
-/**
- * Cek apakah user memiliki role tertentu
- */
-function hasRole($roleCheck) {
-    global $role;
-    if (!isLoggedIn()) return false;
-    return $role === $roleCheck;
-}
-
-/**
- * Redirect ke halaman login jika belum login
- */
-function requireLogin() {
-    if (!isLoggedIn()) {
-        header("Location: login.php");
-        exit();
-    }
-}
-
-/**
- * Redirect jika role tidak sesuai
- */
-function requireRole($requiredRole) {
-    global $role;
-    requireLogin();
-    if ($role !== $requiredRole) {
-        header("Location: index.php");
-        exit();
-    }
 }
 
 /**
@@ -183,7 +154,7 @@ function getCurrentUser() {
 }
 
 /**
- * Get user ID dari global scope
+ * Get user ID
  */
 function getUserId() {
     global $user_id;
@@ -191,7 +162,7 @@ function getUserId() {
 }
 
 /**
- * Get username dari global scope
+ * Get username
  */
 function getUsername() {
     global $username;
@@ -199,7 +170,7 @@ function getUsername() {
 }
 
 /**
- * Get role dari global scope
+ * Get role
  */
 function getRole() {
     global $role;
