@@ -1163,31 +1163,31 @@ $rataProduktiv = $jumlah > 0 ? array_sum(array_column($listData, 'produktivitas'
         <div class="scroll-body">
             <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                 <table>
-                    <thead>
+                   <thead>
                         <tr>
-                            <th style="width:40px;">No</th>
-                            <th>Kabupaten / Kota</th>
-                            <th class="r">Luas Panen (Ha)</th>
-                            <th class="r">Produktivitas (ku/ha)</th>
-                            <th class="r">Produksi (Ton)</th>
+                            <th class="text-center" style="width:40px;">No</th>
+                            <th class="text-center">Kabupaten / Kota</th>
+                            <th class="text-center">Luas Panen (Ha)</th>
+                            <th class="text-center">Produktivitas (ku/ha)</th>
+                            <th class="text-center">Produksi (Ton)</th>
                         </tr>
                     </thead>
                     <tbody>
-                    <?php foreach ($listData as $i => $item): ?>
-                    <tr>
-                        <td>
-                            <?php if ($i < 3): ?>
-                            <span class="rank-badge rank-<?= $i+1 ?>"><?= $i+1 ?></span>
-                            <?php else: ?>
-                            <span class="idx"><?= $i+1 ?></span>
-                            <?php endif; ?>
-                        </td>
-                        <td style="font-weight:600;"><?= htmlspecialchars($item['wilayah']); ?></td>
-                        <td class="mono"><?= number_format($item['luas_panen'], 2, ',', '.'); ?></td>
-                        <td class="mono"><?= number_format($item['produktivitas'], 2, ',', '.'); ?></td>
-                        <td class="mono"><?= number_format($item['produksi'], 2, ',', '.'); ?></td>
-                    </tr>
-                    <?php endforeach; ?>
+                        <?php foreach ($listData as $i => $item): ?>
+                        <tr>
+                            <td class="text-center">
+                                <?php if ($i < 3): ?>
+                                <span class="rank-badge rank-<?= $i+1 ?>"><?= $i+1 ?></span>
+                                <?php else: ?>
+                                <span class="idx"><?= $i+1 ?></span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="text-center font-weight-600"><?= htmlspecialchars($item['wilayah']); ?></td>
+                            <td class="text-center mono"><?= number_format($item['luas_panen'], 2, ',', '.'); ?></td>
+                            <td class="text-center mono"><?= number_format($item['produktivitas'], 2, ',', '.'); ?></td>
+                            <td class="text-center mono"><?= number_format($item['produksi'], 2, ',', '.'); ?></td>
+                        </tr>
+                        <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
