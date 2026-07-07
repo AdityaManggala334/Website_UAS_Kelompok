@@ -666,11 +666,12 @@ $metode_list = [
             <span class="value" id="totalDisplay">Rp <?= number_format($data['harga'], 0, ',', '.') ?></span>
         </div>
 
-        <!-- Buttons -->
+                <!-- Buttons -->
         <div class="btn-group">
-            <a href="pembayaran.php" class="btn btn-primary">🛒 Lanjut ke Pembayaran</a>
+            <button type="submit" class="btn btn-primary">Lanjut ke Pembayaran</button>
             <a href="daftar_alat.php" class="btn btn-secondary">Batal</a>
-        </form>
+        </div>
+    </form>
 
 </div>
 
