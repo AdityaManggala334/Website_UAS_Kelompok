@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "functions": {
+    "api/*.php": {
+      "runtime": "vercel-php@0.7.1"
+    },
+    "index.php": {
+      "runtime": "vercel-php@0.7.1"
+    }
+  },
+  "routes": [
+    {
+      "src": "/$",
+      "dest": "/index.php"
+    },
+    {
+      "src": "/login",
+      "dest": "/api/login.php"
+    },
+    {
+      "src": "/register",
+      "dest": "/api/login.php?tab=register"
+    },
+    {
+      "src": "/dashboard",
+      "dest": "/api/dashboard.php"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}
