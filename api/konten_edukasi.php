@@ -84,7 +84,7 @@ $other_videos = array_slice($videos, 1);
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>Konten Edukasi — Ladusync</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
@@ -377,6 +377,7 @@ $other_videos = array_slice($videos, 1);
         box-shadow: 0 1px 3px rgba(28,43,30,0.05), 0 8px 24px rgba(28,43,30,0.06);
         overflow: hidden;
         transition: all 0.3s ease;
+        cursor: pointer;
     }
     .video-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(28,43,30,0.10); }
 
@@ -393,6 +394,10 @@ $other_videos = array_slice($videos, 1);
         width: 100%;
         height: 100%;
         object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+    .video-card:hover .thumbnail img {
+        transform: scale(1.05);
     }
     .video-card .thumbnail .play-btn {
         position: absolute;
@@ -409,8 +414,9 @@ $other_videos = array_slice($videos, 1);
         color: #EF4444;
         transition: all 0.3s ease;
         font-size: 1.2rem;
+        pointer-events: none;
     }
-    .video-card .thumbnail .play-btn:hover {
+    .video-card:hover .thumbnail .play-btn {
         transform: translate(-50%, -50%) scale(1.1);
         background: white;
     }
@@ -425,6 +431,7 @@ $other_videos = array_slice($videos, 1);
         padding: 2px 8px;
         border-radius: 4px;
         font-family: 'JetBrains Mono', monospace;
+        pointer-events: none;
     }
     .video-card .body {
         padding: 1rem 1.25rem 1.25rem;
@@ -515,6 +522,24 @@ $other_videos = array_slice($videos, 1);
         color: #6B5F4F;
         margin-bottom: 12px;
     }
+    .btn-youtube {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 20px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        background: #FF0000;
+        color: white;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    .btn-youtube:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(255,0,0,0.3);
+        color: white;
+    }
 
     /* ===== RESPONSIVE ===== */
     @media (min-width: 993px) {
@@ -554,6 +579,7 @@ $other_videos = array_slice($videos, 1);
         .topbar { padding: 0 10px; height: 50px; }
         .sidebar { width: 280px !important; }
         .content { padding: 0.75rem; }
+        .video-card .thumbnail .play-btn { width: 40px; height: 40px; font-size: 0.9rem; }
     }
 
     /* Sidebar collapse animation */
@@ -721,7 +747,7 @@ $other_videos = array_slice($videos, 1);
   <!-- ===== TOMBOL KELUAR ===== -->
   <div class="sidebar-bottom">
     <?php if ($is_logged_in): ?>
-      <a href="../logout.php" class="nav-link nav-link-logout">
+      <a href="logout.php" class="nav-link nav-link-logout">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         <span class="nav-text">Keluar</span>
       </a>
@@ -739,7 +765,6 @@ $other_videos = array_slice($videos, 1);
 
   <header class="topbar">
     <div class="topbar-left">
-      <!-- Tombol hamburger untuk membuka sidebar -->
       <button class="sidebar-toggle-hamburger" id="sidebarToggleHamburger" aria-label="Buka menu">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="3" y1="12" x2="21" y2="12"/>
@@ -748,7 +773,6 @@ $other_videos = array_slice($videos, 1);
         </svg>
       </button>
       
-      <!-- Tombol toggle untuk collapse/expand di desktop -->
       <button class="sidebar-toggle-hamburger" id="sidebarToggleCollapse" aria-label="Tutup navigasi" title="Tutup navigasi">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="15" y1="18" x2="9" y2="12"/>
@@ -796,7 +820,7 @@ $other_videos = array_slice($videos, 1);
               </svg>
               Edukasi
             </a>
-            <a href="../logout.php" class="flex items-center gap-2 px-4 py-3 text-sm hover:bg-red-50 transition-colors no-underline" style="color:var(--kritis);">
+            <a href="logout.php" class="flex items-center gap-2 px-4 py-3 text-sm hover:bg-red-50 transition-colors no-underline" style="color:var(--kritis);">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Keluar
             </a>
           <?php else: ?>
@@ -836,7 +860,7 @@ $other_videos = array_slice($videos, 1);
         </div>
         <h2 class="title"><?= htmlspecialchars($main_video['title']) ?></h2>
         <p class="desc"><?= htmlspecialchars($main_video['description']) ?></p>
-        <a href="https://youtu.be/<?= $main_video['youtube_id'] ?>" target="_blank" class="btn-watch">
+        <a href="https://www.youtube.com/watch?v=<?= $main_video['youtube_id'] ?>" target="_blank" class="btn-youtube">
           <i class="fab fa-youtube"></i> Buka di YouTube
         </a>
       </div>
@@ -850,7 +874,7 @@ $other_videos = array_slice($videos, 1);
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
       <?php foreach ($other_videos as $video): ?>
-      <div class="video-card">
+      <div class="video-card" onclick="window.open('https://www.youtube.com/watch?v=<?= $video['youtube_id'] ?>', '_blank')">
         <div class="thumbnail">
           <img 
             src="https://img.youtube.com/vi/<?= $video['youtube_id'] ?>/mqdefault.jpg" 
@@ -869,7 +893,7 @@ $other_videos = array_slice($videos, 1);
           <span class="category"><?= htmlspecialchars($video['category']) ?></span>
           <h4 class="title"><?= htmlspecialchars($video['title']) ?></h4>
           <p class="desc"><?= htmlspecialchars($video['description']) ?></p>
-          <a href="https://youtu.be/<?= $video['youtube_id'] ?>" target="_blank" class="btn-watch">
+          <a href="https://www.youtube.com/watch?v=<?= $video['youtube_id'] ?>" target="_blank" class="btn-watch" onclick="event.stopPropagation();">
             <i class="fab fa-youtube"></i> Tonton
           </a>
         </div>
