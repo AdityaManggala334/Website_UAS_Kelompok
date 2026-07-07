@@ -5,7 +5,8 @@ error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
 // Memanggil konfigurasi sesi global Ladusync dari subfolder api
-require_once __DIR__ . '/koneksi.php';  
+require_once __DIR__ . '/koneksi.php'; 
+require_once __DIR__ . '/auth_helper.php';
 
 if (!$conn) {
     die("Koneksi database gagal: " . mysqli_connect_error());
