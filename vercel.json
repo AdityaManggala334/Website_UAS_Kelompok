@@ -1,43 +1,15 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.php",
-      "use": "@vercel/php@1.0.0"
+  "functions": {
+    "api/*.php": {
+      "runtime": "vercel-php@0.7.1"
     }
-  ],
-  "routes": [
-    {
-      "src": "/",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/login",
-      "dest": "/api/login.php"
-    },
-    {
-      "src": "/register",
-      "dest": "/api/login.php?tab=register"
-    },
-    {
-      "src": "/dashboard",
-      "dest": "/api/dashboard.php"
-    },
-    {
-      "src": "/riwayat",
-      "dest": "/api/riwayat.php"
-    },
-    {
-      "src": "/daftar-alat",
-      "dest": "/api/daftar_alat.php"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
+  },
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/login", "destination": "/api/login.php" },
+    { "source": "/register", "destination": "/api/login.php?tab=register" },
+    { "source": "/dashboard", "destination": "/api/dashboard.php" },
+    { "source": "/riwayat", "destination": "/api/riwayat.php" },
+    { "source": "/daftar-alat", "destination": "/api/daftar_alat.php" }
   ]
 }
