@@ -16,7 +16,6 @@ require_once __DIR__ . '/auth_helper.php';
 // DEBUG: Cek semua data
 // ============================================================
 error_log("=== PEMBAYARAN.PHP DIAKSES ===");
-error_log("SESSION: " . print_r($_SESSION, true));
 error_log("GET: " . print_r($_GET, true));
 error_log("POST: " . print_r($_POST, true));
 
@@ -35,23 +34,39 @@ $role = $userData['role'];
 
 error_log("=== USER DATA: user_id=$user_id, username=$username, role=$role ===");
 
-// Ambil data dari session
-$temp = $_SESSION['sewa_temp'] ?? null;
+// ============================================================
+// AMBIL DATA DARI DATABASE (berdasarkan token)
+// ============================================================
+$token = $_GET['token'] ?? '';
 
-if (!$temp) {
-    error_log("=== SESSION SEWA_TEMP TIDAK ADA! REDIRECT KE DAFTAR_ALAT ===");
+if (empty($token)) {
+    error_log("=== TOKEN KOSONG! REDIRECT KE DAFTAR_ALAT ===");
     header("Location: daftar_alat.php");
     exit();
 }
 
-error_log("=== SESSION SEWA_TEMP ADA: " . print_r($temp, true));
+// Ambil data dari tabel temp_sewa
+$token_esc = mysqli_real_escape_string($conn, $token);
+$sql = "SELECT * FROM temp_sewa WHERE token = '$token_esc' AND expires_at > NOW()";
+$result = mysqli_query($conn, $sql);
+$temp = mysqli_fetch_assoc($result);
 
+if (!$temp) {
+    error_log("=== DATA DENGAN TOKEN $token TIDAK DITEMUKAN ATAU EXPIRED! REDIRECT KE DAFTAR_ALAT ===");
+    header("Location: daftar_alat.php");
+    exit();
+}
+
+error_log("=== DATA DARI DATABASE: " . print_r($temp, true));
+
+// Ambil data dari database
 $id_alat = (int)$temp['id_alat'];
 $nama_alat = $temp['nama_alat'];
 $harga = (float)$temp['harga'];
 $durasi = (int)$temp['durasi'];
 $total_bayar = (float)$temp['total'];
 $metode = $temp['metode'] ?? 'bca';
+$stok = (int)$temp['stok'];
 
 // ============================================================
 // MAPPING METODE PEMBAYARAN
@@ -181,10 +196,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['konfirmasi'])) {
             $insert_id = mysqli_insert_id($conn);
             error_log("Insert berhasil! ID: $insert_id");
             
-            mysqli_commit($conn);
+            // 4. Hapus data dari temp_sewa setelah berhasil
+            mysqli_query($conn, "DELETE FROM temp_sewa WHERE token = '$token_esc'");
             
-            // Hapus session temp
-            unset($_SESSION['sewa_temp']);
+            mysqli_commit($conn);
             
             // Redirect ke instruksi pembayaran
             $metode_lower = strtolower($metode);
