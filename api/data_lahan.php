@@ -860,33 +860,35 @@ unset($_SESSION['success'], $_SESSION['error']);
                 </div>
             </div>
 
-            <!-- TAB LAHAN -->
+            <!-- ============================================================ -->
+            <!-- TAB LAHAN (CENTER ALIGNED) -->
+            <!-- ============================================================ -->
             <div id="tab-lahan" class="p-4 sm:p-6">
                 <div class="table-wrap overflow-x-auto">
                     <table class="w-full border-collapse">
                         <thead>
                             <tr class="border-b" style="border-color:rgba(138,115,87,0.12);">
-                                <th class="text-left py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">#</th>
-                                <th class="text-left py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Lokasi</th>
-                                <th class="text-left py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Luas (Ha)</th>
-                                <th class="text-left py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Status</th>
-                                <th class="text-left py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Aksi</th>
+                                <th class="text-center py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55); width:50px;">#</th>
+                                <th class="text-center py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Lokasi</th>
+                                <th class="text-center py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Luas (Ha)</th>
+                                <th class="text-center py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Status</th>
+                                <th class="text-center py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if ($result_lahan && mysqli_num_rows($result_lahan) > 0): ?>
                                 <?php $no = 1; while($row = mysqli_fetch_assoc($result_lahan)): ?>
                                 <tr class="border-b" style="border-color:rgba(138,115,87,0.06);">
-                                    <td class="py-3 px-3 text-sm font-mono text-slate-400"><?= $no++ ?></td>
-                                    <td class="py-3 px-3 text-sm font-medium"><?= htmlspecialchars($row['lokasi']) ?></td>
-                                    <td class="py-3 px-3 text-sm font-mono"><?= number_format($row['luas'], 2) ?></td>
-                                    <td class="py-3 px-3">
+                                    <td class="text-center py-3 px-3 text-sm font-mono text-slate-400"><?= $no++ ?></td>
+                                    <td class="text-center py-3 px-3 text-sm font-medium"><?= htmlspecialchars($row['lokasi']) ?></td>
+                                    <td class="text-center py-3 px-3 text-sm font-mono"><?= number_format($row['luas'], 2) ?></td>
+                                    <td class="text-center py-3 px-3">
                                         <span class="badge-status badge-<?= strtolower($row['status_lahan']) ?>">
                                             <?= htmlspecialchars($row['status_lahan']) ?>
                                         </span>
                                     </td>
-                                    <td class="py-3 px-3">
-                                        <div class="flex gap-2 flex-wrap">
+                                    <td class="text-center py-3 px-3">
+                                        <div class="flex gap-2 justify-center flex-wrap">
                                             <a href="?edit_lahan_id=<?= $row['id'] ?>#lahan" class="btn-edit">✏️ Edit</a>
                                             <a href="?hapus_lahan=<?= $row['id'] ?>" class="btn-danger" onclick="return confirm('Yakin hapus lahan ini?')">🗑️ Hapus</a>
                                         </div>
@@ -901,37 +903,41 @@ unset($_SESSION['success'], $_SESSION['error']);
                 </div>
             </div>
 
-            <!-- TAB PANEN -->
+            <!-- ============================================================ -->
+            <!-- TAB PANEN (CENTER ALIGNED) -->
+            <!-- ============================================================ -->
             <div id="tab-panen" class="p-4 sm:p-6 hidden">
                 <div class="table-wrap overflow-x-auto">
                     <table class="w-full border-collapse">
                         <thead>
                             <tr class="border-b" style="border-color:rgba(138,115,87,0.12);">
-                                <th class="text-left py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">#</th>
-                                <th class="text-left py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Tanggal</th>
-                                <th class="text-left py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Komoditas</th>
-                                <th class="text-left py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Luas (Ha)</th>
-                                <th class="text-left py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Hasil (Ton)</th>
-                                <th class="text-left py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Musim</th>
-                                <th class="text-left py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Aksi</th>
+                                <th class="text-center py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55); width:50px;">#</th>
+                                <th class="text-center py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Tanggal</th>
+                                <th class="text-center py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Komoditas</th>
+                                <th class="text-center py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Luas (Ha)</th>
+                                <th class="text-center py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Hasil (Ton)</th>
+                                <th class="text-center py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Musim</th>
+                                <th class="text-center py-3 px-3 text-xs font-bold uppercase tracking-wider" style="color:rgba(138,115,87,0.55);">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if ($result_panen && mysqli_num_rows($result_panen) > 0): ?>
                                 <?php $no = 1; while($row = mysqli_fetch_assoc($result_panen)): ?>
                                 <tr class="border-b" style="border-color:rgba(138,115,87,0.06);">
-                                    <td class="py-3 px-3 text-sm font-mono text-slate-400"><?= $no++ ?></td>
-                                    <td class="py-3 px-3 text-sm font-mono"><?= date('d M Y', strtotime($row['tanggal_panen'])) ?></td>
-                                    <td class="py-3 px-3 text-sm font-medium"><?= htmlspecialchars($row['komoditas']) ?></td>
-                                    <td class="py-3 px-3 text-sm font-mono"><?= number_format($row['luas_lahan'], 2) ?></td>
-                                    <td class="py-3 px-3 text-sm font-bold font-mono" style="color:var(--gabah);"><?= number_format($row['hasil_ton'], 2) ?></td>
-                                    <td class="py-3 px-3">
+                                    <td class="text-center py-3 px-3 text-sm font-mono text-slate-400"><?= $no++ ?></td>
+                                    <td class="text-center py-3 px-3 text-sm font-mono"><?= date('d M Y', strtotime($row['tanggal_panen'])) ?></td>
+                                    <td class="text-center py-3 px-3 text-sm font-medium"><?= htmlspecialchars($row['komoditas']) ?></td>
+                                    <td class="text-center py-3 px-3 text-sm font-mono"><?= number_format($row['luas_lahan'], 2) ?></td>
+                                    <td class="text-center py-3 px-3 text-sm font-bold font-mono" style="color:var(--gabah);"><?= number_format($row['hasil_ton'], 2) ?></td>
+                                    <td class="text-center py-3 px-3">
                                         <span class="badge-status badge-<?= $row['musim'] ?>">
                                             <?= ucfirst($row['musim']) ?>
                                         </span>
                                     </td>
-                                    <td class="py-3 px-3">
-                                        <a href="?hapus_panen=<?= $row['id_panen'] ?>" class="btn-danger" onclick="return confirm('Yakin hapus data panen ini?')">🗑️ Hapus</a>
+                                    <td class="text-center py-3 px-3">
+                                        <div class="flex gap-2 justify-center">
+                                            <a href="?hapus_panen=<?= $row['id_panen'] ?>" class="btn-danger" onclick="return confirm('Yakin hapus data panen ini?')">🗑️ Hapus</a>
+                                        </div>
                                     </td>
                                 </tr>
                                 <?php endwhile; ?>
