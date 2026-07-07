@@ -1,7 +1,7 @@
 <?php
 // ============================================================
 // FILE: upload_bukti.php
-// FUNGSI: Upload bukti pembayaran peminjaman alat
+// FUNGSI: Upload bukti pembayaran peminjaman alat (Cloudinary)
 // ============================================================
 
 ob_start();
@@ -20,11 +20,18 @@ if (!isLoggedIn()) {
 }
 
 // ============================================================
+// AMBIL DATA USER
+// ============================================================
+$userData = getCurrentUser();
+$user_id = $userData['id'];
+$username = $userData['username'];
+
+// ============================================================
 // INISIALISASI VARIABEL
 // ============================================================
 $id_peminjaman = (int)($_GET['id'] ?? 0);
-$success = null;
 $error = null;
+$success = null;
 $peminjaman = null;
 
 // ============================================================
@@ -45,101 +52,48 @@ if ($id_peminjaman > 0) {
 }
 
 // ============================================================
-// PROSES UPLOAD BUKTI
+// PROSES SIMPAN URL DARI CLOUDINARY
 // ============================================================
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['bukti_url'])) {
+    $bukti_url = mysqli_real_escape_string($conn, $_POST['bukti_url']);
     $id_peminjaman_val = (int)$_POST['id_peminjaman'];
     
-    // Cek apakah ada file yang diupload
-    if (!isset($_FILES['bukti']) || $_FILES['bukti']['error'] !== 0) {
-        $error = "Silakan pilih file bukti pembayaran terlebih dahulu.";
-    } else {
-        // Validasi file
-        $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'];
-        $file_type = $_FILES['bukti']['type'];
-        $max_size = 5 * 1024 * 1024; // 5MB
+    if (!empty($bukti_url)) {
+        // Update database dengan URL dari Cloudinary
+        $sql = "UPDATE peminjaman SET 
+                    bukti_transfer = '$bukti_url',
+                    status = 'menunggu_verifikasi'
+                WHERE id = $id_peminjaman_val AND id_users = $user_id";
         
-        if ($_FILES['bukti']['size'] > $max_size) {
-            $error = "Ukuran file terlalu besar. Maksimal 5MB.";
-        } elseif (!in_array($file_type, $allowed_types)) {
-            $error = "Format file tidak didukung. Gunakan JPG, PNG, GIF, atau WEBP.";
-        } else {
-            // ============================================================
-            // FOLDER UPLOAD: api/uploads/bukti/
-            // ============================================================
-            $upload_dir = __DIR__ . '/uploads/bukti/';
+        if (mysqli_query($conn, $sql)) {
+            // Ambil data peminjaman terbaru untuk redirect
+            $query_data = "SELECT nama_alat, durasi, total_bayar, metode_bayar, no_invoice 
+                           FROM peminjaman 
+                           WHERE id = $id_peminjaman_val";
+            $result_data = mysqli_query($conn, $query_data);
+            $data = mysqli_fetch_assoc($result_data);
             
-            // Buat folder jika belum ada
-            if (!file_exists($upload_dir)) {
-                $old_umask = umask(0);
-                @mkdir($upload_dir, 0777, true);
-                umask($old_umask);
-            }
-            
-            // Cek apakah folder bisa ditulis
-            if (!is_writable($upload_dir)) {
-                @chmod($upload_dir, 0777);
-            }
-            
-            // ============================================================
-            // PROSES UPLOAD FILE
-            // ============================================================
-            if (is_writable($upload_dir)) {
-                $file_extension = pathinfo($_FILES['bukti']['name'], PATHINFO_EXTENSION);
-                $new_filename = 'bukti_' . $id_peminjaman_val . '_' . time() . '.' . $file_extension;
-                $upload_path = $upload_dir . $new_filename;
+            if ($data) {
+                $params = http_build_query([
+                    'alat' => $data['nama_alat'],
+                    'durasi' => $data['durasi'],
+                    'total' => $data['total_bayar'],
+                    'metode' => $data['metode_bayar'],
+                    'invoice' => $data['no_invoice'],
+                    'id' => $id_peminjaman_val
+                ]);
                 
-                if (move_uploaded_file($_FILES['bukti']['tmp_name'], $upload_path)) {
-                    // Simpan path relatif ke database
-                    $file_path_db = 'api/uploads/bukti/' . $new_filename;
-                    
-                    // Update database
-                    $sql = "UPDATE peminjaman SET 
-                                bukti_transfer = '$file_path_db',
-                                status = 'menunggu_verifikasi'
-                            WHERE id = $id_peminjaman_val AND id_users = $user_id";
-                    
-                    if (mysqli_query($conn, $sql)) {
-                        // ============================================================
-                        // ✅ REDIRECT KE SUKSES.PHP (BUKAN RIWAYAT)
-                        // ============================================================
-                        // Ambil data peminjaman terbaru untuk dikirim ke sukses.php
-                        $query_data = "SELECT nama_alat, durasi, total_bayar, metode_bayar, no_invoice 
-                                       FROM peminjaman 
-                                       WHERE id = $id_peminjaman_val";
-                        $result_data = mysqli_query($conn, $query_data);
-                        $data = mysqli_fetch_assoc($result_data);
-                        
-                        if ($data) {
-                            $params = http_build_query([
-                                'alat' => $data['nama_alat'],
-                                'durasi' => $data['durasi'],
-                                'total' => $data['total_bayar'],
-                                'metode' => $data['metode_bayar'],
-                                'invoice' => $data['no_invoice'],
-                                'id' => $id_peminjaman_val
-                            ]);
-                            
-                            header("Location: sukses.php?$params");
-                            exit();
-                        } else {
-                            // Fallback: redirect ke riwayat jika gagal ambil data
-                            header("Location: riwayat.php?tab=transaksi&status=success");
-                            exit();
-                        }
-                    } else {
-                        $error = "Gagal menyimpan data ke database: " . mysqli_error($conn);
-                        if (file_exists($upload_path)) {
-                            @unlink($upload_path);
-                        }
-                    }
-                } else {
-                    $error = "Gagal mengupload file. Coba lagi.";
-                }
+                header("Location: sukses.php?$params");
+                exit();
             } else {
-                $error = "Folder upload tidak bisa ditulis. Path: " . $upload_dir;
+                header("Location: riwayat.php?tab=transaksi&status=success");
+                exit();
             }
+        } else {
+            $error = "Gagal menyimpan data ke database: " . mysqli_error($conn);
         }
+    } else {
+        $error = "URL bukti tidak valid. Silakan upload ulang.";
     }
 }
 ?>
@@ -154,6 +108,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload'])) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,800&family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- ============================================ -->
+    <!-- CLOUDINARY UPLOAD WIDGET                     -->
+    <!-- ============================================ -->
+    <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
     
     <style>
         :root {
@@ -222,6 +181,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload'])) {
             box-shadow: 0 4px 16px rgba(47,82,51,0.20);
         }
         .btn-primary:hover { box-shadow: 0 6px 24px rgba(47,82,51,0.30); }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
         .btn-secondary {
             background: #f1f5f9;
             color: var(--lempung);
@@ -240,39 +204,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload'])) {
         }
         .back-link:hover { color: var(--sawah); }
         
-        .drop-zone {
+        .upload-box {
             border: 2px dashed #d1d5db;
             border-radius: 12px;
-            padding: 2rem;
+            padding: 2rem 1.5rem;
             text-align: center;
             transition: all 0.3s ease;
             cursor: pointer;
             background: #fafafa;
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
-        .drop-zone:hover {
+        .upload-box:hover {
             border-color: var(--sawah);
             background: #f0fdf4;
         }
-        .drop-zone.dragover {
-            border-color: var(--sawah);
-            background: #dcfce7;
-        }
-        .drop-zone .icon { font-size: 3rem; margin-bottom: 0.5rem; }
-        .drop-zone .text { font-size: 0.9rem; color: #6b7280; }
-        .drop-zone .sub { font-size: 0.75rem; color: #9ca3af; }
+        .upload-box .icon { font-size: 3rem; margin-bottom: 0.5rem; }
+        .upload-box .text { font-size: 0.9rem; color: #6b7280; }
+        .upload-box .sub { font-size: 0.75rem; color: #9ca3af; }
+        
+        /* ============================================ */
+        /* PREVIEW GAMBAR FULL SESUAI KOTAK            */
+        /* ============================================ */
         #file-name {
             font-size: 0.85rem;
             font-weight: 600;
             color: var(--sawah);
             margin-top: 0.5rem;
         }
-        .preview-img {
-            max-width: 100%;
-            max-height: 200px;
-            border-radius: 8px;
-            margin-top: 0.5rem;
-            border: 1px solid #e5e7eb;
+        
+        #preview-container {
+            width: 100%;
+            margin-top: 0.75rem;
         }
+        
+        #preview-container img {
+            width: 100%;
+            max-height: 320px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            background: #f8fafc;
+            display: block;
+        }
+        
+        /* Status upload berhasil - ubah warna border */
+        .upload-box.uploaded {
+            border-color: #22c55e;
+            background: #f0fdf4;
+        }
+        
         .success-box {
             background: #ecfdf5;
             border: 1px solid #a7f3d0;
@@ -301,6 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload'])) {
         }
         @media (max-width: 480px) {
             .card { padding: 1.25rem; }
+            #preview-container img { max-height: 200px; }
         }
     </style>
 </head>
@@ -316,14 +301,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload'])) {
     </a>
 
     <div class="text-center">
-        <div class="text-5xl mb-3">📤</div>
+        <div class="text-5xl mb-3"></div>
         <h1 class="font-display text-xl font-bold text-ink">Upload Bukti Pembayaran</h1>
         <p class="text-sm text-lempung mt-1">Upload bukti transfer untuk verifikasi</p>
     </div>
 
     <?php if ($success): ?>
         <div class="success-box mt-4">
-            <span class="icon">✅</span>
+            <span class="icon"></span>
             <p class="font-semibold"><?= htmlspecialchars($success) ?></p>
             <p class="text-sm mt-1">Mengalihkan ke halaman sukses...</p>
         </div>
@@ -332,7 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload'])) {
         <?php if ($error): ?>
             <div class="error-box mt-4">
                 <p class="font-semibold">⚠️ Error</p>
-                <p class="text-sm mt-1"><?= $error ?></p>
+                <p class="text-sm mt-1"><?= htmlspecialchars($error) ?></p>
             </div>
         <?php endif; ?>
 
@@ -361,27 +346,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload'])) {
             </div>
 
             <div class="info-box">
-                <strong>💡 Tips:</strong> Pastikan file bukti terlihat jelas dan nominal sesuai dengan total tagihan.
+                <strong>Tips:</strong> Pastikan file bukti terlihat jelas dan nominal sesuai dengan total tagihan.
             </div>
 
-            <form action="" method="POST" enctype="multipart/form-data" id="uploadForm" class="mt-4">
+            <!-- ============================================ -->
+            <!-- FORM UPLOAD DENGAN CLOUDINARY                -->
+            <!-- ============================================ -->
+            <form method="POST" id="uploadForm" class="mt-4">
                 <input type="hidden" name="id_peminjaman" value="<?= $id_peminjaman ?>">
-                <input type="hidden" name="upload" value="1">
-                
-                <div class="drop-zone" id="dropZone">
-                    <div class="icon">📷</div>
-                    <div class="text">Klik atau drag & drop untuk upload</div>
-                    <div class="sub">JPG, PNG, GIF, WEBP (Max 5MB)</div>
-                    <input type="file" name="bukti" id="fileInput" accept="image/*" class="hidden" required>
+                <input type="hidden" name="bukti_url" id="bukti_url">
+
+                <!-- Upload Box (Tombol untuk membuka Cloudinary Widget) -->
+                <div class="upload-box" id="uploadBox">
+                    <div class="icon" id="uploadIcon">📷</div>
+                    <div class="text" id="uploadText">Klik untuk pilih file bukti</div>
+                    <div class="sub" id="uploadSub">JPG, PNG, PDF (Max 5MB)</div>
                     <div id="file-name"></div>
                     <div id="preview-container"></div>
                 </div>
 
+                <!-- Tombol Simpan (aktif setelah upload sukses) -->
                 <div class="flex flex-col gap-3 mt-4">
-                    <button type="submit" class="btn btn-primary" id="uploadBtn">
-                        📤 Upload Bukti
+                    <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                        💾 Simpan Bukti
                     </button>
-                    <a href="riwayat.php?tab=transaksi" class="btn btn-secondary">↩️ Lewati</a>
+                    <a href="riwayat.php?tab=transaksi" class="btn btn-secondary">Lewati</a>
                 </div>
             </form>
 
@@ -401,78 +390,88 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload'])) {
 
 </div>
 
+<!-- ============================================ -->
+<!-- JAVASCRIPT CLOUDINARY WIDGET                 -->
+<!-- ============================================ -->
 <script>
-// ============================================================
-// DRAG & DROP UPLOAD
-// ============================================================
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
+// === KONFIGURASI CLOUDINARY ===
+// Ganti dengan Cloud Name Anda!
+const CLOUD_NAME = 'ak6uebhl';
+const UPLOAD_PRESET = 'ladusync_upload';
+const FOLDER_NAME = 'bukti_pembayaran';
+
+// === ELEMEN ===
+const uploadBox = document.getElementById('uploadBox');
+const uploadIcon = document.getElementById('uploadIcon');
+const uploadText = document.getElementById('uploadText');
+const uploadSub = document.getElementById('uploadSub');
 const fileName = document.getElementById('file-name');
 const previewContainer = document.getElementById('preview-container');
+const submitBtn = document.getElementById('submitBtn');
+const buktiUrlInput = document.getElementById('bukti_url');
 
-if (dropZone) {
-    dropZone.addEventListener('click', () => fileInput.click());
-
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('dragover');
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('dragover');
-    });
-
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('dragover');
-        if (e.dataTransfer.files.length) {
-            fileInput.files = e.dataTransfer.files;
-            updateFileInfo(e.dataTransfer.files[0]);
+// === INISIALISASI WIDGET CLOUDINARY ===
+const myWidget = cloudinary.createUploadWidget(
+    {
+        cloudName: CLOUD_NAME,
+        uploadPreset: UPLOAD_PRESET,
+        sources: ['local', 'camera'],
+        multiple: false,
+        maxFileSize: 5000000, // 5MB
+        folder: FOLDER_NAME,
+        showAdvancedOptions: false,
+        cropping: false,
+        defaultSource: 'local'
+    },
+    (error, result) => {
+        // === PROSES SETELAH UPLOAD ===
+        if (!error && result && result.event === "success") {
+            const imageUrl = result.info.secure_url;
+            const fileNameRaw = result.info.original_filename || 'file';
+            const fileSize = (result.info.bytes / 1024 / 1024).toFixed(2);
+            
+            // Isi input hidden dengan URL
+            buktiUrlInput.value = imageUrl;
+            
+            // Sembunyikan icon, text, sub
+            uploadIcon.style.display = 'none';
+            uploadText.style.display = 'none';
+            uploadSub.style.display = 'none';
+            
+            // Tampilkan nama file
+            fileName.textContent = fileNameRaw + ' (' + fileSize + ' MB)';
+            
+            // Tampilkan preview FULL (object-fit: contain)
+            previewContainer.innerHTML = 
+                '<img src="' + imageUrl + '" alt="Preview Bukti" loading="lazy">';
+            
+            // Tambahkan class uploaded untuk ubah border
+            uploadBox.classList.add('uploaded');
+            
+            // Aktifkan tombol submit
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Simpan Bukti';
+            submitBtn.style.opacity = '1';
         }
-    });
-}
-
-if (fileInput) {
-    fileInput.addEventListener('change', function() {
-        if (this.files.length) {
-            updateFileInfo(this.files[0]);
-        }
-    });
-}
-
-function updateFileInfo(file) {
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/jpg'];
-    if (!validTypes.includes(file.type)) {
-        alert('❌ Format file tidak didukung. Gunakan JPG, PNG, GIF, atau WEBP.');
-        fileInput.value = '';
-        fileName.textContent = '';
-        previewContainer.innerHTML = '';
-        return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-        alert('❌ Ukuran file terlalu besar. Maksimal 5MB.');
-        fileInput.value = '';
-        fileName.textContent = '';
-        previewContainer.innerHTML = '';
+);
+
+// === BUKA WIDGET SAAT UPLOAD BOX DIKLIK ===
+uploadBox.addEventListener('click', function() {
+    myWidget.open();
+});
+
+// === SUBMIT FORM ===
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    if (!buktiUrlInput.value) {
+        e.preventDefault();
+        alert('⚠️ Silakan upload bukti terlebih dahulu!');
         return;
     }
     
-    fileName.textContent = '📎 ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(2) + ' MB)';
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        previewContainer.innerHTML = '<img src="' + e.target.result + '" class="preview-img" alt="Preview">';
-    };
-    reader.readAsDataURL(file);
-}
-
-// ============================================================
-// SUBMIT FORM
-// ============================================================
-document.getElementById('uploadForm')?.addEventListener('submit', function(e) {
-    const btn = document.getElementById('uploadBtn');
+    const btn = document.getElementById('submitBtn');
     btn.disabled = true;
-    btn.innerHTML = '⏳ Mengupload...';
+    btn.innerHTML = '⏳ Menyimpan...';
     btn.style.opacity = '0.7';
 });
 </script>
