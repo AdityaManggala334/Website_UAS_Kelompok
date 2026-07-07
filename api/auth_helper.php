@@ -110,6 +110,19 @@ if (!$is_logged_in && isset($_COOKIE['sm_uid'])) {
 }
 
 // ============================================================
+// EKSPOR VARIABEL GLOBAL (untuk file lain)
+// ============================================================
+
+// Pastikan variabel tersedia di global scope
+$GLOBALS['user_id'] = $user_id;
+$GLOBALS['username'] = $username;
+$GLOBALS['role'] = $role;
+$GLOBALS['is_logged_in'] = $is_logged_in;
+$GLOBALS['namaDepan'] = $namaDepan;
+$GLOBALS['namaLengkap'] = $namaLengkap;
+$GLOBALS['email'] = $email;
+
+// ============================================================
 // FUNGSI HELPER
 // ============================================================
 
@@ -169,4 +182,27 @@ function getCurrentUser() {
     ];
 }
 
+/**
+ * Get user ID dari global scope
+ */
+function getUserId() {
+    global $user_id;
+    return (int)$user_id;
+}
+
+/**
+ * Get username dari global scope
+ */
+function getUsername() {
+    global $username;
+    return $username;
+}
+
+/**
+ * Get role dari global scope
+ */
+function getRole() {
+    global $role;
+    return $role;
+}
 ?>
