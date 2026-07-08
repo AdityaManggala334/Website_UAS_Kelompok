@@ -249,26 +249,39 @@ $role = $userData['role'] ?? 'guest';
 
     /* ===== MAP STYLES ===== */
     .map-wrap {
-        position: relative; overflow: hidden;
+        position: relative; 
+        overflow: hidden;
         background: #1a2e1a;
         border-radius: 12px;
+        width: 100%;
+        aspect-ratio: 1024 / 638; /* Dimensi persis sesuai gambar */
+        min-height: 350px;
+        max-height: 600px;
     }
+    
     .map-wrap img.aerial {
-        width: 100%; display: block;
-        max-height: 350px; object-fit: cover; object-position: center;
-        opacity: 0.88;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: fill; /* Memaksa gambar mengisi penuh container */
+        object-position: center;
+        background: #1a2e1a;
     }
-    @media (min-width: 640px) { .map-wrap img.aerial { max-height: 420px; } }
-    @media (min-width: 1024px) { .map-wrap img.aerial { max-height: 500px; } }
     
     .map-overlay {
         position: absolute; inset: 0;
-        background: rgba(0,0,0,.18);
+        background: rgba(0,0,0,.08);
         pointer-events: none;
+        z-index: 1;
     }
     .sensor-svg {
         position: absolute; inset: 0;
-        width: 100%; height: 100%;
+        width: 100%; 
+        height: 100%;
+        z-index: 2;
     }
 
     @keyframes sensorPulse {
@@ -279,7 +292,7 @@ $role = $userData['role'] ?? 'guest';
     .sensor-ring { animation: sensorPulse 2.5s ease-in-out infinite; }
 
     .sensor-click { cursor: pointer; transition: transform .2s; }
-    .sensor-click:hover { transform: scale(1.12); }
+    .sensor-click:hover { transform: scale(1.15); }
 
     .kpi-row { display: grid; grid-template-columns: repeat(2,1fr); gap: 0.75rem; margin-bottom: 1rem; }
     @media (min-width: 640px) { .kpi-row { grid-template-columns: repeat(4,1fr); gap: 1rem; } }
@@ -610,7 +623,7 @@ $role = $userData['role'] ?? 'guest';
         .kpi-chip { padding: 8px !important; }
         .kpi-num { font-size: 0.95rem !important; }
         .map-layout { grid-template-columns: 1fr !important; }
-        .map-wrap img.aerial { max-height: 220px; }
+        .map-wrap { aspect-ratio: 1024 / 638; min-height: 200px; max-height: 400px; }
         .profil-name { display: none !important; }
         .sidebar-toggle-hamburger { width: 34px; height: 34px; }
         .site-footer { padding: 1.5rem 1rem 1rem; }
@@ -627,7 +640,7 @@ $role = $userData['role'] ?? 'guest';
         .kpi-num { font-size: 0.8rem !important; }
         .kpi-lbl { font-size: 0.45rem !important; }
         .kpi-dot { width: 6px !important; height: 6px !important; }
-        .map-wrap img.aerial { max-height: 160px; }
+        .map-wrap { aspect-ratio: 1024 / 638; min-height: 150px; max-height: 300px; }
         .panel-head { padding: 6px 10px !important; font-size: 0.65rem !important; }
         .panel-head .panel-sub { font-size: 0.5rem !important; }
         .legend-wrap { gap: 0.4rem; padding: 0.3rem 0.5rem; }
@@ -894,14 +907,14 @@ $role = $userData['role'] ?? 'guest';
                 <span class="panel-sub" id="waktu-peta">--:--:--</span>
             </div>
             <div class="map-wrap">
-                <!-- GAMBAR PETA SAWAH -->
-                <img class="aerial" src="https://imgur.com/dmDQGaw.png" alt="Peta Irigasi Sawah" onerror="this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20400%20300%22%3E%3Crect%20width%3D%22400%22%20height%3D%22300%22%20fill%3D%22%231a2e1a%22%2F%3E%3Ctext%20x%3D%22200%22%20y%3D%22150%22%20text-anchor%3D%22middle%22%20fill%3D%22%2334D399%22%20font-size%3D%2214%22%3EPeta%20Irigasi%3C%2Ftext%3E%3C%2Fsvg%3E'">
+                <!-- GAMBAR PETA SAWAH - FULL DENGAN DIMENSI 1024x638 -->
+                <img class="aerial" src="https://i.ibb.co.com/XkLRSxSJ/Whats-App-Image-2025-12-17-at-15-35-12-1.jpg" alt="Peta Irigasi Sawah Ladusync" 
+                     onerror="this.src='data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%201024%20638%22%3E%3Crect%20width%3D%221024%22%20height%3D%22638%22%20fill%3D%22%231a2e1a%22%2F%3E%3Ctext%20x%3D%22512%22%20y%3D%22319%22%20text-anchor%3D%22middle%22%20fill%3D%22%2334D399%22%20font-size%3D%2220%22%3EPeta%20Irigasi%20Ladusync%3C%2Ftext%3E%3C%2Fsvg%3E'">
                 <div class="map-overlay"></div>
 
-                <!-- SVG OVERLAY SENSOR (UKURAN KECIL + BULAT) -->
+                <!-- SVG OVERLAY SENSOR -->
                 <svg class="sensor-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
                     <defs>
-                        <!-- Efek glow untuk titik sensor -->
                         <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
                             <feGaussianBlur stdDeviation="1.5" result="blur"/>
                             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
@@ -910,16 +923,16 @@ $role = $userData['role'] ?? 'guest';
 
                     <!-- Sensor SNS-01 -->
                     <g class="sensor-click" onclick="pilihSensor('SNS-01')">
-                        <circle id="ring-SNS-01" cx="14" cy="10" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
-                        <circle id="dot-SNS-01" cx="14" cy="10" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
-                        <text x="14" y="10.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S1</text>
+                        <circle id="ring-SNS-01" cx="11" cy="10" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
+                        <circle id="dot-SNS-01" cx="11" cy="10" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
+                        <text x="11" y="10.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S1</text>
                     </g>
 
                     <!-- Sensor SNS-02 -->
                     <g class="sensor-click" onclick="pilihSensor('SNS-02')">
-                        <circle id="ring-SNS-02" cx="26" cy="10" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
-                        <circle id="dot-SNS-02" cx="26" cy="10" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
-                        <text x="26" y="10.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S2</text>
+                        <circle id="ring-SNS-02" cx="27" cy="10" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
+                        <circle id="dot-SNS-02" cx="27" cy="10" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
+                        <text x="27" y="10.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S2</text>
                     </g>
 
                     <!-- Sensor SNS-03 - Rendah -->
@@ -931,16 +944,16 @@ $role = $userData['role'] ?? 'guest';
 
                     <!-- Sensor SNS-04 - Tinggi -->
                     <g class="sensor-click" onclick="pilihSensor('SNS-04')">
-                        <circle id="ring-SNS-04" cx="69" cy="10" r="4" fill="none" stroke="#3B82F6" stroke-width="1" opacity=".5" class="sensor-ring"/>
-                        <circle id="dot-SNS-04" cx="69" cy="10" r="3.5" fill="#3B82F6" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
-                        <text x="69" y="10.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S4</text>
+                        <circle id="ring-SNS-04" cx="79" cy="10" r="4" fill="none" stroke="#3B82F6" stroke-width="1" opacity=".5" class="sensor-ring"/>
+                        <circle id="dot-SNS-04" cx="79" cy="10" r="3.5" fill="#3B82F6" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
+                        <text x="79" y="10.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S4</text>
                     </g>
 
                     <!-- Sensor SNS-05 -->
                     <g class="sensor-click" onclick="pilihSensor('SNS-05')">
-                        <circle id="ring-SNS-05" cx="15" cy="55" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
-                        <circle id="dot-SNS-05" cx="15" cy="55" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
-                        <text x="15" y="55.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S5</text>
+                        <circle id="ring-SNS-05" cx="15" cy="50" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
+                        <circle id="dot-SNS-05" cx="15" cy="50" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
+                        <text x="15" y="50.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S5</text>
                     </g>
 
                     <!-- Sensor SNS-06 - Kritis -->
@@ -952,16 +965,16 @@ $role = $userData['role'] ?? 'guest';
 
                     <!-- Sensor SNS-07 -->
                     <g class="sensor-click" onclick="pilihSensor('SNS-07')">
-                        <circle id="ring-SNS-07" cx="68" cy="50" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
-                        <circle id="dot-SNS-07" cx="68" cy="50" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
-                        <text x="68" y="50.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S7</text>
+                        <circle id="ring-SNS-07" cx="80" cy="50" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
+                        <circle id="dot-SNS-07" cx="80" cy="50" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
+                        <text x="80" y="50.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S7</text>
                     </g>
 
                     <!-- Sensor SNS-08 -->
                     <g class="sensor-click" onclick="pilihSensor('SNS-08')">
-                        <circle id="ring-SNS-08" cx="85" cy="80" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
-                        <circle id="dot-SNS-08" cx="85" cy="80" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
-                        <text x="85" y="80.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S8</text>
+                        <circle id="ring-SNS-08" cx="85" cy="85" r="4" fill="none" stroke="#10B981" stroke-width="1" opacity=".5" class="sensor-ring"/>
+                        <circle id="dot-SNS-08" cx="85" cy="85" r="3.5" fill="#10B981" stroke="white" stroke-width="1.2" filter="url(#glow)"/>
+                        <text x="85" y="85.8" text-anchor="middle" dominant-baseline="middle" font-size="2.2" fill="white" font-weight="700">S8</text>
                     </g>
                 </svg>
             </div>
@@ -1363,7 +1376,7 @@ function simulasiUpdate() {
 renderDaftar();
 setInterval(simulasiUpdate, 4000);
 setInterval(updateWaktu, 1000);
-updateWaktu();
+updateWaktu();S
 </script>
 
 </body>
