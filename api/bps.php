@@ -29,6 +29,11 @@ $namaDepan = $userData['nama_depan'] ?? $username;
 $role = $userData['role'] ?? 'guest';
 
 // ============================================================
+// TAMBAHKAN VARIABEL $user_role UNTUK KONSISTENSI
+// ============================================================
+$user_role = $role; // <- PERBAIKAN: Tambahkan ini
+
+// ============================================================
 // FUNGSI UNTUK MENGAMBIL DATA DARI API BPS MENGGUNAKAN cURL
 // ============================================================
 function fetchBPS(string $url): ?array {
@@ -1031,16 +1036,16 @@ $rataProduktiv = $jumlah > 0 ? array_sum(array_column($listData, 'produktivitas'
       <div class="profil-wrap relative">
         <button class="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium bg-transparent border-none cursor-pointer" style="color:var(--ink);">
           <div class="w-7 h-7 rounded-md flex items-center justify-center font-bold text-xs" style="background:rgba(47,82,51,0.12);color:var(--sawah);">
-            <?= strtoupper(substr($username, 0, 1)) ?>
+            <?= strtoupper(substr($namaDepan, 0, 1)) ?>
           </div>
-          <span class="profil-name hidden sm:inline"><?= htmlspecialchars($username) ?></span>
+          <span class="profil-name hidden sm:inline"><?= htmlspecialchars($namaDepan) ?></span>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
 
         <div class="profil-dropdown">
           <div class="px-4 py-3 border-b" style="background:linear-gradient(135deg,#F5F1E5,#ECE5D3);border-color:rgba(138,115,87,0.18);">
-            <div class="font-bold text-sm font-display" style="color:var(--sawah);"><?= htmlspecialchars($username) ?></div>
-            <div class="text-xs text-slate-500 mt-0.5 capitalize"><?= str_replace('_', ' ', $user_role ?? 'guest') ?></div>
+            <div class="font-bold text-sm font-display" style="color:var(--sawah);"><?= htmlspecialchars($namaDepan) ?></div>
+            <div class="text-xs text-slate-500 mt-0.5 capitalize"><?= str_replace('_', ' ', $role) ?></div>
           </div>
           <?php if ($is_logged_in): ?>
             <a href="dashboard.php" class="flex items-center gap-2 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors no-underline">
