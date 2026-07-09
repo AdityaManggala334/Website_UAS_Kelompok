@@ -3,349 +3,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ladusync — Ekosistem Digital Pengairan & Pertanian</title>
+  <title>PANENUSA — Sistem Informasi Pencatatan Hasil Panen</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <style>
     :root {
-      --bg: #F5F1E5;                    
-      --card: rgba(255, 255, 255, 0.92); 
-      --ink: #23301F;                    
-      --ink-soft: #8A7357;               
-      --accent-gold: #D3A868;            
-      --accent-lime: #B6FF5E;            
-      --forest-deep: #0F1D16;            
-      --forest-base: #2F5233;            
-      --forest-light: #4A7050;           
-      --line: rgba(138, 115, 87, 0.15);  
-      --topbar: #0A1410;                 
+      --bg: #F9FAFB;
+      --card: #FFFFFF;
+      --forest-deep: #064E3B; /* Hijau Tua */
+      --forest-base: #059669; /* Hijau Utama */
+      --forest-light: #10B981; /* Hijau Cerah */
+      --accent-gold: #D97706; /* Emas */
+      --ink: #1F2937;
+      --ink-soft: #6B7280;
     }
 
-    body {
-      background: var(--bg);
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      color: var(--ink);
-    }
-
-    @keyframes floatSlow {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-15px); }
-    }
-    .orb-decor { animation: floatSlow 8s ease-in-out infinite; }
-    .orb-decor-reverse { animation: floatSlow 7s ease-in-out infinite reverse; }
-
-    .topbar { background: var(--topbar); color: #F5F1E5; }
-
-    .btn-round {
-      width: 52px; height: 52px; border-radius: 9999px;
-      background: linear-gradient(135deg, var(--forest-base) 0%, var(--forest-light) 100%);
-      color: #fff;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .btn-round:hover { transform: scale(1.1) rotate(15deg); box-shadow: 0 6px 20px rgba(47,82,51,0.3); }
-
-    .pill {
-      border-radius: 12px; padding: .85rem 1.6rem; 
-      font-weight: 700; font-size: .8rem;
-      display: inline-flex; align-items: center; gap: .6rem;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .hero-img { border-radius: 28px; overflow: hidden; background: #0F1D16; border: 1px solid var(--line); }
-    .dot { width: 14px; height: 14px; border-radius: 9999px; }
-
-    .stat-box { 
-      background: linear-gradient(150deg, #0F1D16 0%, #0A1410 100%); 
-      border-radius: 28px;
-      box-shadow: 0 12px 40px rgba(15,29,22,0.15);
-      border: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .leaf-mark { position: absolute; right: -40px; bottom: -40px; opacity: 0.04; pointer-events: none; }
-
-    .faq-item { border-bottom: 1px solid var(--line); transition: all 0.2s ease; }
-    .faq-item:hover { border-color: var(--forest-base); }
-    .faq-item summary { cursor: pointer; list-style: none; }
-    .faq-item summary::-webkit-details-marker { display: none; }
-    .faq-plus { transition: transform .25s ease; color: var(--accent-gold); }
-    details[open] .faq-plus { transform: rotate(45deg); color: var(--forest-base); }
-
-    .card-surface { 
-      background: var(--card); 
-      border: 1px solid var(--line); 
-      backdrop-filter: blur(28px);
-      box-shadow: 0 4px 20px rgba(15,29,22,0.02);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .card-surface:hover {
-      transform: translateY(-6px);
-      border-color: var(--accent-gold);
-      box-shadow: 0 12px 30px rgba(138,115,87,0.1);
-    }
-
-    .bg-grid-pattern { 
-      background-image: linear-gradient(rgba(138,115,87,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(138,115,87,0.03) 1px, transparent 1px); 
-      background-size: 40px 40px; 
-    }
-
-    ::selection { background: var(--forest-base); color: #fff; }
-    :focus-visible { outline: 2px solid var(--forest-base); outline-offset: 3px; }
+    body { background: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--ink); }
+    .pill { border-radius: 12px; padding: .85rem 1.6rem; font-weight: 700; font-size: .8rem; display: inline-flex; align-items: center; gap: .6rem; transition: all 0.3s; }
+    .btn-round { width: 52px; height: 52px; border-radius: 9999px; background: var(--forest-base); color: #fff; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+    .hero-img { border-radius: 28px; overflow: hidden; }
+    .card-surface { background: var(--card); border: 1px solid #E5E7EB; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.3s; }
+    .card-surface:hover { border-color: var(--forest-base); transform: translateY(-5px); }
   </style>
 </head>
-<body class="antialiased min-h-screen bg-grid-pattern relative">
+<body class="antialiased">
 
-  <div class="orb-decor fixed -top-24 -left-20 w-96 h-96 rounded-full pointer-events-none z-0" style="background:rgba(47,82,51,0.05); filter:blur(80px);"></div>
-  <div class="orb-decor-reverse fixed -bottom-16 right-3 w-80 h-80 rounded-full pointer-events-none z-0" style="background:rgba(185,132,58,0.05); filter:blur(80px);"></div>
-
-  <div class="topbar text-[11px] font-medium tracking-wide relative z-10 border-b border-white/5">
-    <div class="max-w-6xl mx-auto px-6 py-3 flex justify-between items-center">
-      <span class="opacity-75 flex items-center gap-1">⏱️ Senin – Sabtu, 07.00 – 16.00</span>
-      <div class="flex gap-6 opacity-75">
-        <span class="hover:text-white transition-colors">📞 0812-5282-4675</span>
-        <span class="hover:text-white transition-colors">✉️ halo@ladusync.id</span>
-      </div>
-    </div>
-  </div>
-
-  <nav class="max-w-6xl mx-auto px-6 py-6 flex justify-between items-center relative z-10">
-    <div class="flex items-center gap-3 group">
-      <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#0F1D16] to-[#0A1410] border border-white/10 shadow-md">
-        <svg width="22" height="22" viewBox="0 0 44 44" fill="none">
-          <path d="M22 7C22 7 13 18 13 24C13 29.52 17.03 34 22 34C26.97 34 31 29.52 31 24C31 18 22 7 22 7Z" fill="var(--accent-lime)"/>
-        </svg>
-      </div>
-      <span class="font-extrabold text-2xl tracking-tight" style="color:var(--forest-deep)">Ladusync</span>
-    </div>
-    <div class="hidden md:flex items-center gap-8 text-[13px] font-bold tracking-wider uppercase" style="color:var(--ink-soft)">
-      <a href="#" class="hover:text(var(--forest-base)) transition-colors" style="color:var(--forest-base);">Beranda</a>
-      <a href="#tentang" class="hover:text-[#2F5233] transition-colors">Tentang Kami</a>
-      <a href="#layanan" class="hover:text-[#2F5233] transition-colors">Layanan</a>
-      <a href="#faq" class="hover:text-[#2F5233] transition-colors">FAQ</a>
-      <a href="#kontak" class="hover:text-[#2F5233] transition-colors">Kontak</a>
-    </div>
+  <nav class="max-w-6xl mx-auto px-6 py-6 flex justify-between items-center">
     <div class="flex items-center gap-3">
-      <a href="api/login.php" class="pill text-white hover:-translate-y-0.5 shadow-sm hover:shadow-md" style="background:linear-gradient(135deg, var(--forest-base) 0%, var(--forest-light) 100%);">
-        Masuk
-      </a>
+      <div class="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center text-white font-bold text-lg">🌾</div>
+      <span class="font-extrabold text-2xl tracking-tight text-emerald-900">PANENUSA</span>
     </div>
+    <div class="hidden md:flex items-center gap-8 text-[13px] font-bold tracking-wider uppercase text-slate-600">
+      <a href="#" class="hover:text-emerald-700">Beranda</a>
+      <a href="#tentang" class="hover:text-emerald-700">Tentang Kami</a>
+      <a href="#layanan" class="hover:text-emerald-700">Fitur</a>
+    </div>
+    <a href="login.php" class="pill text-white shadow-lg bg-emerald-700 hover:bg-emerald-800">Masuk</a>
   </nav>
 
-  <header class="max-w-6xl mx-auto px-6 pt-10 pb-24 relative z-10">
+  <header class="max-w-6xl mx-auto px-6 pt-10 pb-24">
     <div class="grid md:grid-cols-2 gap-12 items-center">
       <div class="space-y-6">
-        <h1 class="font-extrabold text-4xl sm:text-5xl lg:text-6xl leading-[1.12] tracking-tight" style="color:var(--forest-deep)">
-          Perjalanan Pertanian <br>Anda Dimulai di Sini
+        <h1 class="font-extrabold text-5xl lg:text-6xl leading-[1.12] tracking-tight text-emerald-950">
+          Kelola Data Panen <br>Dengan Satu Ketukan
         </h1>
-        <p class="text-base max-w-md leading-relaxed font-medium" style="color:var(--ink-soft)">
-          Ladusync menyatukan data lahan, debit air, dan jadwal irigasi dalam satu ekosistem — memudahkan petani mengelola panen dari hulu ke hilir.
+        <p class="text-base max-w-md leading-relaxed font-medium text-slate-600">
+          PANENUSA menyatukan petani, admin logistik, dan pemilik lahan dalam satu ekosistem digital untuk mencatat hasil panen secara akurat dan transparan.
         </p>
         <div class="flex items-center gap-6 pt-2">
-          <a href="api/login.php?tab=register" class="pill text-white hover:-translate-y-0.5 shadow-lg" style="background:linear-gradient(135deg, var(--forest-base) 0%, var(--forest-light) 100%); box-shadow: 0 4px 14px rgba(47,82,51,0.2);">
-            Daftar Sekarang
-          </a>
-          <a href="dashboard.html" class="text-[13px] font-extrabold flex items-center gap-2 group tracking-wide" style="color:var(--forest-deep)">
-            Masuk Dashboard <span class="group-hover:translate-x-1 transition-transform" aria-hidden="true">→</span>
-          </a>
+          <a href="register.php" class="pill text-white shadow-lg bg-emerald-700 hover:bg-emerald-800">Daftar Sekarang</a>
         </div>
       </div>
-
-      <div class="relative">
-        <div class="hero-img relative shadow-2xl transition-transform duration-500 hover:scale-[1.01]">
-          <div class="absolute inset-0 bg-gradient-to-t from-[#0F1D16]/40 to-transparent z-10 pointer-events-none"></div>
-          <img src="https://images.unsplash.com/photo-1519082572439-7ed19908e47e?q=80&w=900&auto=format&fit=crop"
-               alt="Pemandangan udara sawah berundak di Bali"
-               class="w-full h-[400px] object-cover transition-all duration-700 hover:scale-105 active:scale-98 cursor-pointer">
-          <a href="#layanan" class="btn-round absolute -bottom-6 left-10 shadow-lg z-20" aria-label="Pelajari lebih lanjut">
-            <svg width="20" height="20" viewBox="0 0 18 18" fill="none"><path d="M4 9H14M14 9L9 4M14 9L9 14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </a>
-        </div>
-        <div class="absolute -top-4 -right-4 w-8 h-8 rounded-full border-4" style="background:var(--bg); border-color:var(--accent-gold)"></div>
+      <div class="hero-img shadow-2xl">
+        <img src="https://images.unsplash.com/photo-1574943320219-555e21f7d41e?q=80&w=900&auto=format&fit=crop" class="w-full h-[400px] object-cover">
       </div>
     </div>
   </header>
 
-  <section class="max-w-6xl mx-auto px-6 py-20 relative z-10">
+  <section id="tentang" class="max-w-6xl mx-auto px-6 py-20">
     <div class="grid md:grid-cols-2 gap-16 items-center">
-      <div class="relative order-last md:order-first">
-        <div class="hero-img shadow-2xl border-4" style="border-color:var(--card)">
-          <img src="https://images.unsplash.com/photo-1745237511288-353dd386e65e?q=80&w=800&auto=format&fit=crop"
-               alt="Petani menanam padi di petak sawah berlumpur"
-               class="w-full h-[320px] object-cover transition-all duration-700 hover:scale-105 active:scale-98 cursor-pointer">
-        </div>
-      </div>
       <div class="space-y-5">
-        <span class="text-[11px] font-bold tracking-widest uppercase block" style="color:var(--accent-gold)">MENGENAL LEBIH DEKAT</span>
-        <h2 class="font-extrabold text-3xl sm:text-4xl leading-tight tracking-tight" style="color:var(--forest-deep)">
-          Menyingkap Dunia Pertanian Modern
-        </h2>
-        <p class="text-sm leading-relaxed font-medium" style="color:var(--ink-soft)">
-          Dari pemetaan lahan hingga pemantauan debit air secara real-time, Ladusync membantu petani mengambil keputusan lebih cepat and tepat setiap musim tanam.
+        <h2 class="font-extrabold text-4xl text-emerald-950">Modernisasi Pencatatan Panen</h2>
+        <p class="text-sm leading-relaxed font-medium text-slate-600">
+          PANENUSA hadir untuk menghilangkan kerumitan pencatatan manual. Kami memastikan setiap kilogram hasil panen tercatat, terverifikasi, dan siap didistribusikan.
         </p>
-        <div class="pt-2">
-          <a href="#tentang" class="pill text-white hover:-translate-y-0.5 shadow-md items-center gap-3" style="background:var(--forest-deep)">
-            Selengkapnya
-            <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background:var(--accent-gold)">
-              <svg width="10" height="10" viewBox="0 0 18 18" fill="none"><path d="M4 9H14M14 9L9 4M14 9L9 14" stroke="#0F1D16" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-          </a>
-        </div>
+      </div>
+      <div class="hero-img shadow-xl">
+        <img src="https://images.unsplash.com/photo-1523348837708-15d4a09cfacb?q=80&w=800&auto=format&fit=crop" class="w-full h-[320px] object-cover">
       </div>
     </div>
   </section>
 
-  <section id="tentang" class="max-w-6xl mx-auto px-6 py-20 relative z-10">
-    <div class="grid md:grid-cols-2 gap-16 items-center">
-      <div class="grid grid-cols-2 gap-4 relative">
-        <div class="hero-img mt-10 shadow-xl border-2" style="border-color:var(--card)">
-          <img src="https://images.unsplash.com/photo-1751996766812-83144dfa42f9?q=80&w=500&auto=format&fit=crop"
-               alt="Petani menanam padi di sawah" class="w-full h-60 object-cover transition-all duration-700 hover:scale-105 active:scale-98 cursor-pointer">
-        </div>
-        <div class="hero-img shadow-xl border-2" style="border-color:var(--card)">
-          <img src="https://images.unsplash.com/photo-1752917680382-3ac274d84103?q=80&w=500&auto=format&fit=crop"
-               alt="Keranjang berisi hasil panen segar" class="w-full h-60 object-cover transition-all duration-700 hover:scale-105 active:scale-98 cursor-pointer">
-        </div>
-      </div>
-      <div class="space-y-5">
-        <span class="text-[11px] font-bold tracking-widest uppercase block" style="color:var(--accent-gold)">TENTANG KAMI</span>
-        <h2 class="font-extrabold text-3xl sm:text-4xl leading-tight tracking-tight" style="color:var(--forest-deep)">
-          Sumber Terpercaya untuk Pertanian Modern
-        </h2>
-        <p class="text-sm leading-relaxed font-medium" style="color:var(--ink-soft)">
-          Kami hadir untuk mendampingi mobilitas pengelolaan lahan terpadu, menyediakan akses satu data statistik pengairan, dan membangun ruang kolaborasi inklusif demi stabilitas pangan nasional.
-        </p>
-        <div class="pt-2">
-          <a href="#layanan" class="pill text-white hover:-translate-y-0.5 shadow-lg" style="background:linear-gradient(135deg, var(--forest-base) 0%, var(--forest-light) 100%);">
-            Pelajari Layanan Kami
-          </a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="max-w-6xl mx-auto px-6 pb-20 relative z-10">
-    <div class="stat-box px-8 py-12 grid grid-cols-2 md:grid-cols-4 gap-y-10 gap-x-6 text-center">
-      <div class="space-y-1 border-r border-white/5 last:border-none">
-        <span class="text-4xl sm:text-5xl font-extrabold block tracking-tight text-white">15.000</span>
-        <span class="text-[10px] font-bold uppercase tracking-widest block" style="color:var(--accent-gold)">Petani</span>
-      </div>
-      <div class="space-y-1 md:border-r border-white/5 last:border-none">
-        <span class="text-4xl sm:text-5xl font-extrabold block tracking-tight text-white">1.000</span>
-        <span class="text-[10px] font-bold uppercase tracking-widest block" style="color:var(--accent-gold)">Pemasok</span>
-      </div>
-      <div class="space-y-1 border-r border-white/5 last:border-none">
-        <span class="text-4xl sm:text-5xl font-extrabold block tracking-tight text-white">1.200</span>
-        <span class="text-[10px] font-bold uppercase tracking-widest block" style="color:var(--accent-gold)">Perusahaan</span>
-      </div>
-      <div class="space-y-1">
-        <span class="text-4xl sm:text-5xl font-extrabold block tracking-tight text-white">10.000</span>
-        <span class="text-[10px] font-bold uppercase tracking-widest block" style="color:var(--accent-gold)">Agen Lapangan</span>
-      </div>
-    </div>
-  </section>
-
-  <section id="layanan" class="max-w-6xl mx-auto px-6 py-20 relative z-10">
-    <div class="text-center max-w-xl mx-auto space-y-3">
-      <span class="text-[11px] font-bold tracking-wider uppercase block" style="color:var(--forest-base)">LAYANAN UTAMA</span>
-      <h2 class="font-extrabold text-3xl sm:text-4xl leading-tight tracking-tight" style="color:var(--forest-deep)">
-        Jelajahi Ragam Solusi Pertanian Kami
-      </h2>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
+  <section id="layanan" class="max-w-6xl mx-auto px-6 py-20">
+    <h2 class="font-extrabold text-4xl text-center text-emerald-950 mb-16">Fitur Unggulan</h2>
+    <div class="grid md:grid-cols-3 gap-8">
       <div class="card-surface rounded-3xl p-8">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 text-xl shadow-inner" style="background:#0F1D16; border: 1px solid rgba(255,255,255,0.05)">🗺️</div>
-        <h3 class="font-bold text-xl tracking-tight" style="color:var(--forest-deep)">Manajemen Lahan</h3>
-        <p class="text-sm mt-3 leading-relaxed font-medium" style="color:var(--ink-soft)">
-          Pemetaan petak sawah dan kalkulasi kebutuhan air untuk setiap musim panen.
-        </p>
+        <div class="text-3xl mb-4">📝</div>
+        <h3 class="font-bold text-xl text-emerald-950">Input Digital</h3>
+        <p class="text-sm mt-3 text-slate-600">Catat berat dan varietas hasil panen langsung dari ladang.</p>
       </div>
       <div class="card-surface rounded-3xl p-8">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 text-xl shadow-inner" style="background:#0F1D16; border: 1px solid rgba(255,255,255,0.05)">📊</div>
-        <h3 class="font-bold text-xl tracking-tight" style="color:var(--forest-deep)">Sinkronisasi Data</h3>
-        <p class="text-sm mt-3 leading-relaxed font-medium" style="color:var(--ink-soft)">
-          Grafik kelembapan tanah dan sensor debit air yang diperbarui secara berkala.
-        </p>
+        <div class="text-3xl mb-4">⚙️</div>
+        <h3 class="font-bold text-xl text-emerald-950">Verifikasi Sortir</h3>
+        <p class="text-sm mt-3 text-slate-600">Admin dapat memverifikasi kualitas layak atau cacat hasil panen.</p>
       </div>
       <div class="card-surface rounded-3xl p-8">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 text-xl shadow-inner" style="background:#0F1D16; border: 1px solid rgba(255,255,255,0.05)">🤝</div>
-        <h3 class="font-bold text-xl tracking-tight" style="color:var(--forest-deep)">Consul Sejawat</h3>
-        <p class="text-sm mt-3 leading-relaxed font-medium" style="color:var(--ink-soft)">
-          Ruang diskusi antar petani untuk menangani kendala irigasi dan hama.
-        </p>
+        <div class="text-3xl mb-4">📜</div>
+        <h3 class="font-bold text-xl text-emerald-950">Surat Jalan</h3>
+        <p class="text-sm mt-3 text-slate-600">Penerbitan surat jalan otomatis untuk distribusi komoditas.</p>
       </div>
     </div>
   </section>
 
-  <section id="faq" class="relative overflow-hidden py-24 border-t border-b" style="background:var(--card); border-color:var(--line)">
-    <div class="max-w-6xl mx-auto px-6 relative z-10">
-      <div class="grid md:grid-cols-2 gap-16">
-        <div class="space-y-4">
-          <span class="text-[11px] font-bold tracking-widest uppercase block" style="color:var(--forest-base)">MENGAPA MEMILIH KAMI</span>
-          <h2 class="font-extrabold text-3xl sm:text-4xl leading-tight tracking-tight" style="color:var(--forest-deep)">
-            Data pengairan yang transparan dan bisa diandalkan
-          </h2>
-          <p class="text-sm leading-relaxed max-w-md font-medium" style="color:var(--ink-soft)">
-            Dibangun bersama petugas pintu air dan petani lapangan, Ladusync memastikan setiap petak sawah mendapat gilirannya.
-          </p>
-        </div>
-
-        <div class="space-y-2">
-          <details class="faq-item py-4" open>
-            <summary class="flex justify-between items-center group">
-              <span class="font-bold text-base tracking-tight transition-colors group-hover:text-[#2F5233]" style="color:var(--forest-deep)">Bagaimana cara mendaftar sebagai petani?</span>
-              <span class="faq-plus text-xl font-bold">+</span>
-            </summary>
-            <p class="text-sm mt-3 leading-relaxed font-medium" style="color:var(--ink-soft)">
-              Klik "Daftar Sekarang", isi data lahan dan wilayah irigasi Anda, lalu verifikasi melalui petugas setempat.
-            </p>
-          </details>
-          <details class="faq-item py-4">
-            <summary class="flex justify-between items-center group">
-              <span class="font-bold text-base tracking-tight transition-colors group-hover:text-[#2F5233]" style="color:var(--forest-deep)">Apakah data debit air diperbarui secara langsung?</span>
-              <span class="faq-plus text-xl font-bold">+</span>
-            </summary>
-            <p class="text-sm mt-3 leading-relaxed font-medium" style="color:var(--ink-soft)">
-              Ya, sensor lapangan mengirim data debit air secara berkala ke dashboard Anda.
-            </p>
-          </details>
-          <details class="faq-item py-4">
-            <summary class="flex justify-between items-center group">
-              <span class="font-bold text-base tracking-tight transition-colors group-hover:text-[#2F5233]" style="color:var(--forest-deep)">Apakah layanan ini berbayar?</span>
-              <span class="faq-plus text-xl font-bold">+</span>
-            </summary>
-            <p class="text-sm mt-3 leading-relaxed font-medium" style="color:var(--ink-soft)">
-              Pendaftaran dasar gratis untuk petani terdaftar di wilayah irigasi mitra.
-            </p>
-          </details>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section id="kontak" class="max-w-6xl mx-auto px-6 py-20 relative z-10">
-    <div class="rounded-[32px] overflow-hidden relative shadow-2xl border" style="background:linear-gradient(135deg, #0F1D16 0%, #0A1410 100%); border-color: rgba(138,115,87,0.1)">
-      <div class="absolute inset-0 bg-gradient-to-r from-[#0F1D16] to-transparent z-10"></div>
-      <!-- GANTI LINK DI DALAM SRC DI BAWAH INI -->
-    <img src="https://images.unsplash.com/photo-1519082572439-7ed19908e47e?q=80&w=900&auto=format&fit=crop"
-     alt="Pemandangan udara sawah berundak di Bali"
-     class="w-full h-[400px] object-cover transition-all duration-700 hover:scale-105 active:scale-98 cursor-pointer"> 
-      <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-6 z-20 space-y-6">
-        <h2 class="font-extrabold text-3xl sm:text-4xl text-white max-w-xl tracking-tight leading-snug">
-          Kembangkan Usaha Pertanian Anda Bersama Kami
-        </h2>
-        <a href="api/login.php?tab=register" class="pill text-white hover:-translate-y-0.5 shadow-lg" style="background:linear-gradient(135deg, var(--forest-base) 0%, var(--forest-light) 100%); box-shadow: 0 4px 15px rgba(47,82,51,0.4);">
-          Daftar Akun
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <footer class="text-center py-10 text-[11px] font-bold uppercase tracking-widest relative z-10" style="color:var(--ink-soft); border-top:1px solid var(--line)">
-    © 2026 Ladusync — Ekosistem Digital Pengairan
+  <footer class="text-center py-10 border-t text-xs font-bold uppercase tracking-widest text-slate-500">
+    &copy; 2026 PANENUSA — Sistem Informasi Pencatatan Hasil Panen
   </footer>
 
 </body>
