@@ -9,50 +9,52 @@
   
   <style>
     :root {
-      --bg: #F9FAFB;
-      --card: #FFFFFF;
-      --forest-deep: #064E3B; /* Hijau Tua */
-      --forest-base: #059669; /* Hijau Utama */
-      --forest-light: #10B981; /* Hijau Cerah */
-      --accent-gold: #D97706; /* Emas */
-      --ink: #1F2937;
-      --ink-soft: #6B7280;
+      --bg: #F0F7FF;            /* Biru Sangat Muda */
+      --card: #FFFFFF;          
+      --ink: #1E293B;           /* Slate 800 */
+      --ink-soft: #475569;      /* Slate 600 */
+      --accent-gold: #F59E0B;   /* Amber 500 */
+      --navy-deep: #1E3A8A;     /* Biru Tua */
+      --navy-base: #1D4ED8;     /* Biru Utama */
+      --navy-light: #3B82F6;    /* Biru Cerah */
+      --line: rgba(30, 64, 175, 0.1);   
     }
 
     body { background: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--ink); }
+    .btn-round { width: 52px; height: 52px; border-radius: 9999px; background: linear-gradient(135deg, var(--navy-base) 0%, var(--navy-light) 100%); color: #fff; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+    .btn-round:hover { transform: scale(1.1) rotate(15deg); box-shadow: 0 6px 20px rgba(29,78,216,0.3); }
     .pill { border-radius: 12px; padding: .85rem 1.6rem; font-weight: 700; font-size: .8rem; display: inline-flex; align-items: center; gap: .6rem; transition: all 0.3s; }
-    .btn-round { width: 52px; height: 52px; border-radius: 9999px; background: var(--forest-base); color: #fff; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
-    .hero-img { border-radius: 28px; overflow: hidden; }
-    .card-surface { background: var(--card); border: 1px solid #E5E7EB; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.3s; }
-    .card-surface:hover { border-color: var(--forest-base); transform: translateY(-5px); }
+    .hero-img { border-radius: 28px; overflow: hidden; background: #1E3A8A; border: 1px solid var(--line); }
+    .card-surface { background: var(--card); border: 1px solid var(--line); backdrop-filter: blur(28px); box-shadow: 0 4px 20px rgba(30, 58, 138, 0.05); transition: all 0.3s; }
+    .card-surface:hover { transform: translateY(-6px); border-color: var(--navy-base); box-shadow: 0 12px 30px rgba(30, 58, 138, 0.1); }
   </style>
 </head>
 <body class="antialiased">
 
-  <nav class="max-w-6xl mx-auto px-6 py-6 flex justify-between items-center">
+  <nav class="max-w-6xl mx-auto px-6 py-6 flex justify-between items-center relative z-10">
     <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center text-white font-bold text-lg">🌾</div>
-      <span class="font-extrabold text-2xl tracking-tight text-emerald-900">PANENUSA</span>
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-blue-900 to-blue-700 border border-white/10 shadow-md text-white font-bold">🌾</div>
+      <span class="font-extrabold text-2xl tracking-tight text-blue-900">PANENUSA</span>
     </div>
-    <div class="hidden md:flex items-center gap-8 text-[13px] font-bold tracking-wider uppercase text-slate-600">
-      <a href="#" class="hover:text-emerald-700">Beranda</a>
-      <a href="#tentang" class="hover:text-emerald-700">Tentang Kami</a>
-      <a href="#layanan" class="hover:text-emerald-700">Fitur</a>
+    <div class="hidden md:flex items-center gap-8 text-[13px] font-bold tracking-wider uppercase text-slate-500">
+      <a href="#" class="text-blue-700">Beranda</a>
+      <a href="#tentang" class="hover:text-blue-700 transition">Tentang Kami</a>
+      <a href="#layanan" class="hover:text-blue-700 transition">Layanan</a>
     </div>
-    <a href="login.php" class="pill text-white shadow-lg bg-emerald-700 hover:bg-emerald-800">Masuk</a>
+    <a href="api/login.php" class="pill text-white shadow-sm hover:shadow-md" style="background:linear-gradient(135deg, var(--navy-base) 0%, var(--navy-light) 100%);">Masuk</a>
   </nav>
 
   <header class="max-w-6xl mx-auto px-6 pt-10 pb-24">
     <div class="grid md:grid-cols-2 gap-12 items-center">
       <div class="space-y-6">
-        <h1 class="font-extrabold text-5xl lg:text-6xl leading-[1.12] tracking-tight text-emerald-950">
-          Kelola Data Panen <br>Dengan Satu Ketukan
+        <h1 class="font-extrabold text-4xl sm:text-6xl leading-[1.12] tracking-tight text-blue-900">
+          Kelola Hasil Panen <br>Dengan Digitalisasi
         </h1>
         <p class="text-base max-w-md leading-relaxed font-medium text-slate-600">
-          PANENUSA menyatukan petani, admin logistik, dan pemilik lahan dalam satu ekosistem digital untuk mencatat hasil panen secara akurat dan transparan.
+          PANENUSA menyatukan data petani, catatan tonase, dan verifikasi sortir dalam satu sistem terintegrasi untuk stabilitas hasil pertanian.
         </p>
         <div class="flex items-center gap-6 pt-2">
-          <a href="register.php" class="pill text-white shadow-lg bg-emerald-700 hover:bg-emerald-800">Daftar Sekarang</a>
+          <a href="api/login.php?tab=register" class="pill text-white shadow-lg" style="background:linear-gradient(135deg, var(--navy-base) 0%, var(--navy-light) 100%);">Daftar Sekarang</a>
         </div>
       </div>
       <div class="hero-img shadow-2xl">
@@ -64,34 +66,36 @@
   <section id="tentang" class="max-w-6xl mx-auto px-6 py-20">
     <div class="grid md:grid-cols-2 gap-16 items-center">
       <div class="space-y-5">
-        <h2 class="font-extrabold text-4xl text-emerald-950">Modernisasi Pencatatan Panen</h2>
+        <span class="text-[11px] font-bold tracking-widest uppercase text-amber-600">TENTANG PANENUSA</span>
+        <h2 class="font-extrabold text-3xl text-blue-900">Solusi Pencatatan Modern</h2>
         <p class="text-sm leading-relaxed font-medium text-slate-600">
-          PANENUSA hadir untuk menghilangkan kerumitan pencatatan manual. Kami memastikan setiap kilogram hasil panen tercatat, terverifikasi, dan siap didistribusikan.
+          Kami hadir untuk mendampingi mobilitas pencatatan panen, menyediakan akses data real-time, dan membangun ruang kolaborasi inklusif demi ketahanan pangan.
         </p>
       </div>
-      <div class="hero-img shadow-xl">
-        <img src="https://images.unsplash.com/photo-1523348837708-15d4a09cfacb?q=80&w=800&auto=format&fit=crop" class="w-full h-[320px] object-cover">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="hero-img border-2 border-blue-100"><img src="https://images.unsplash.com/photo-1523348837708-15d4a09cfacb?q=80&w=500&auto=format&fit=crop" class="w-full h-60 object-cover"></div>
+        <div class="hero-img border-2 border-blue-100"><img src="https://images.unsplash.com/photo-1595981267035-7b04ca84a82d?q=80&w=500&auto=format&fit=crop" class="w-full h-60 object-cover"></div>
       </div>
     </div>
   </section>
 
   <section id="layanan" class="max-w-6xl mx-auto px-6 py-20">
-    <h2 class="font-extrabold text-4xl text-center text-emerald-950 mb-16">Fitur Unggulan</h2>
+    <h2 class="font-extrabold text-3xl text-center text-blue-900 mb-16">Fitur Utama</h2>
     <div class="grid md:grid-cols-3 gap-8">
       <div class="card-surface rounded-3xl p-8">
-        <div class="text-3xl mb-4">📝</div>
-        <h3 class="font-bold text-xl text-emerald-950">Input Digital</h3>
-        <p class="text-sm mt-3 text-slate-600">Catat berat dan varietas hasil panen langsung dari ladang.</p>
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 text-xl bg-blue-100 text-blue-700">📝</div>
+        <h3 class="font-bold text-xl text-blue-900">Input Panen</h3>
+        <p class="text-sm mt-3 text-slate-600">Pencatatan berat dan varietas komoditas yang terintegrasi.</p>
       </div>
       <div class="card-surface rounded-3xl p-8">
-        <div class="text-3xl mb-4">⚙️</div>
-        <h3 class="font-bold text-xl text-emerald-950">Verifikasi Sortir</h3>
-        <p class="text-sm mt-3 text-slate-600">Admin dapat memverifikasi kualitas layak atau cacat hasil panen.</p>
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 text-xl bg-blue-100 text-blue-700">🔍</div>
+        <h3 class="font-bold text-xl text-blue-900">Verifikasi Kualitas</h3>
+        <p class="text-sm mt-3 text-slate-600">Proses sortir dan persetujuan kualitas panen secara digital.</p>
       </div>
       <div class="card-surface rounded-3xl p-8">
-        <div class="text-3xl mb-4">📜</div>
-        <h3 class="font-bold text-xl text-emerald-950">Surat Jalan</h3>
-        <p class="text-sm mt-3 text-slate-600">Penerbitan surat jalan otomatis untuk distribusi komoditas.</p>
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 text-xl bg-blue-100 text-blue-700">🚚</div>
+        <h3 class="font-bold text-xl text-blue-900">Surat Jalan</h3>
+        <p class="text-sm mt-3 text-slate-600">Generate dokumen pengiriman secara otomatis dan efisien.</p>
       </div>
     </div>
   </section>
